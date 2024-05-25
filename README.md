@@ -1,2 +1,13 @@
-# Crescendo2024-Bot-2
-Robot code for team 3482's primary off-season bot. The temporary name « Bot 2 » will be used for now.
+# Arrowbotics (3482) Crescendo 2024 Code for `Bot-2`
+
+The name `Bot-2` is temporary, and will be changed in the future.
+The archive of our on-season code for our `Artemis` bot is in `Crescendo2024-Artemis` in [this branch](https://github.com/team-3482/Crescendo2024-Artemis/tree/onseason-archive).
+
+## Resources
+TBD
+
+## Contributors
+
+<a href="https://github.com/team-3482/Crescendo2024-Bot-2/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=team-3482/Crescendo2024-Bot-2" alt="contributors"/>
+</a>
