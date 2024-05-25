@@ -1,7 +1,7 @@
 # Arrowbotics (3482) Crescendo 2024 Code for `Bot-2`
 
 The name `Bot-2` is temporary, and will be changed in the future.
-The archive of our on-season code for our `Artemis` bot is in `Crescendo2024-Artemis` in [this branch](https://github.com/team-3482/Crescendo2024-Artemis/tree/onseason-archive).
+The archive of our on-season code for our `Artemis` bot is in [Crescendo2024-Artemis](https://github.com/team-3482/Crescendo2024-Artemis/tree/onseason-archive).
 
 ## Resources
 TBD
