@@ -4,8 +4,14 @@
 
 package frc.robot;
 
+import java.util.Map;
+
+import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -17,6 +23,9 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.constants.Positions.PositionInitialization;
+import frc.robot.swerve.CommandSwerveDrivetrain;
+import frc.robot.swerve.Telemetry;
+import frc.robot.swerve.TunerConstants;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 
@@ -54,6 +63,8 @@ public class RobotContainer {
         this.driverController = new CommandXboxController(ControllerConstants.DRIVER_CONTROLLER_ID);
         this.operatorController = new CommandXboxController(ControllerConstants.OPERATOR_CONTROLLER_ID);
 
+        configureDrivetrain(); // This is done separately because it works differently from other Subsystems
+
         initializeSubsystems();
         // Register named commands for pathplanner (always do this after subsystem initialization)
         registerNamedCommands();
@@ -61,17 +72,80 @@ public class RobotContainer {
         configureDriverBindings();
         configureOperatorBindings();
 
-        autoChooser = AutoBuilder.buildAutoChooser(); // Default auto will be Commands.none()
+        this.autoChooser = AutoBuilder.buildAutoChooser(); // Default auto will be Commands.none()
         // Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
         //     .add("Auto Chooser", autoChooser)
         //     .withWidget(BuiltInWidgets.kComboBoxChooser)
         //     .withPosition(11, 0)
         //     .withSize(4, 1);
-        SmartDashboard.putData("Auto Chooser", autoChooser);
+        SmartDashboard.putData("Auto Chooser", this.autoChooser);
+    }
+
+    /**
+     * This function initializes the swerve subsystem and configures its bindings with the driver controller.
+     * This is based on the {@code Phoenix6 Swerve Example} that can be found on GitHub.
+     */
+    private void configureDrivetrain() {
+        final double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps; // kSpeedAt12VoltsMps desired top speed
+        final double MaxAngularRate = 1.5 * Math.PI; // 3/4 of a rotation per second max angular velocity
+        final CommandSwerveDrivetrain drivetrain = TunerConstants.DriveTrain; // My drivetrain
+
+        final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
+            .withDeadband(MaxSpeed * ControllerConstants.DEADBAND).withRotationalDeadband(MaxAngularRate * ControllerConstants.DEADBAND) // Add a deadband
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric driving in open loop
+        
+        final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
+        final SwerveRequest.FieldCentric fieldCentricMove = new SwerveRequest.FieldCentric().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+        final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
+
+        final Telemetry logger = new Telemetry(MaxSpeed);
+
+        drivetrain.setDefaultCommand( // Drivetrain will execute this command periodically
+            drivetrain.applyRequest(() ->
+                drive.withVelocityX(-driverController.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+                .withVelocityY(-driverController.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+                .withRotationalRate(-driverController.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+            )
+            .ignoringDisable(true)
+        );
+
+        driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
+        driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
+            new Rotation2d(-driverController.getLeftY(), -driverController.getLeftX()))
+        ));
+
+        // Burger
+        driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
+        // Double Rectangle
+        // TODO : Reset using LL data
+        driverController.back().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative(new Pose2d())));
+
+        // This looks terrible, but I can't think of a better way to do it </3
+        if (ControllerConstants.DPAD_DRIVE_INPUT) {
+            /** POV angle : [X velocity, Y velocity] in m/s */
+            final Map<Integer, Double[]> povSpeeds = Map.ofEntries(
+                Map.entry(  0, new Double[]{ 0.5,  0.0}),
+                Map.entry( 45, new Double[]{ 0.5,  0.5}),
+                Map.entry( 90, new Double[]{ 0.0,  0.5}),
+                Map.entry(135, new Double[]{-0.5,  0.5}),
+                Map.entry(180, new Double[]{-0.5,  0.0}),
+                Map.entry(225, new Double[]{-0.5, -0.5}),
+                Map.entry(270, new Double[]{ 0.0, -0.5}),
+                Map.entry(315, new Double[]{ 0.5, -0.5})
+            );
+
+            povSpeeds.forEach(
+                (Integer angle, Double[] speeds) -> driverController.pov(angle).whileTrue(
+                    drivetrain.applyRequest(() -> fieldCentricMove.withVelocityX(speeds[0]).withVelocityY(speeds[1]))
+                )
+            );
+        }
+        
+        drivetrain.registerTelemetry(logger::telemeterize);
     }
 
     /** Creates instances of each subsystem so periodic runs */
-    private void initializeSubsystems() {
+    private void initializeSubsystems() {        
         // TODO : Move this to SwerveSubsystem once it's created
 
         for (PositionInitialization position : PositionInitialization.values()) {
@@ -106,6 +180,8 @@ public class RobotContainer {
         driverController.b().onTrue(Commands.runOnce(() -> {
             CommandScheduler.getInstance().cancelAll();
         }));
+
+        // POV, joysticks, and start/back are all used in configureDrivetrain()
     }
 
     /** Configures the button bindings of the driver controller */
