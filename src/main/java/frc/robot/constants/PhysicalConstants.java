@@ -14,7 +14,7 @@ public final class PhysicalConstants {
      */
     public static final class RobotConstants {
         /** Name of the CTRE CAN bus. */
-        public static final String CTRE_CAN_BUS = "canivore";
+        public static final String CTRE_CAN_BUS = "ctre";
     }
 
     /** Constants for limelight-related data. */

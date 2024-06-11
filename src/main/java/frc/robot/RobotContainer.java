@@ -111,8 +111,11 @@ public class RobotContainer {
 
         driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
         driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
-            new Rotation2d(-driverController.getLeftY(), -driverController.getLeftX()))
-        ));
+            new Rotation2d(
+                Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
+                Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
+            )
+        )));
 
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
@@ -124,14 +127,14 @@ public class RobotContainer {
         if (ControllerConstants.DPAD_DRIVE_INPUT) {
             /** POV angle : [X velocity, Y velocity] in m/s */
             final Map<Integer, Double[]> povSpeeds = Map.ofEntries(
-                Map.entry(  0, new Double[]{ 0.5,  0.0}),
-                Map.entry( 45, new Double[]{ 0.5,  0.5}),
-                Map.entry( 90, new Double[]{ 0.0,  0.5}),
-                Map.entry(135, new Double[]{-0.5,  0.5}),
-                Map.entry(180, new Double[]{-0.5,  0.0}),
-                Map.entry(225, new Double[]{-0.5, -0.5}),
-                Map.entry(270, new Double[]{ 0.0, -0.5}),
-                Map.entry(315, new Double[]{ 0.5, -0.5})
+                Map.entry(  0, new Double[]{ 0.25,  0.0}),
+                Map.entry( 45, new Double[]{ 0.25, -0.25}),
+                Map.entry( 90, new Double[]{ 0.0, -0.25}),
+                Map.entry(135, new Double[]{-0.25, -0.25}),
+                Map.entry(180, new Double[]{-0.25,  0.0}),
+                Map.entry(225, new Double[]{-0.25,  0.25}),
+                Map.entry(270, new Double[]{ 0.0,  0.25}),
+                Map.entry(315, new Double[]{ 0.25,  0.25})
             );
 
             povSpeeds.forEach(
@@ -189,9 +192,9 @@ public class RobotContainer {
         // Unused while building and testing new kraken swerve drive
         
         // Cancel all currently scheduled commands
-        operatorController.b().onTrue(Commands.runOnce(() -> {
-            CommandScheduler.getInstance().cancelAll();
-        }));
+        // operatorController.b().onTrue(Commands.runOnce(() -> {
+        //     CommandScheduler.getInstance().cancelAll();
+        // }));
     }
 
     /**
