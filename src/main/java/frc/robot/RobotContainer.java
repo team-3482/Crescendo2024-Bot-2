@@ -10,10 +10,8 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
-import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -22,10 +20,12 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
+import frc.robot.constants.Positions;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 
@@ -100,11 +100,17 @@ public class RobotContainer {
 
         final Telemetry logger = new Telemetry(MaxSpeed);
 
+        Trigger rightBumper = driverController.rightBumper();
+
         drivetrain.setDefaultCommand( // Drivetrain will execute this command periodically
             drivetrain.applyRequest(() ->
-                drive.withVelocityX(-driverController.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                .withVelocityY(-driverController.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                .withRotationalRate(-driverController.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+                drive
+                // Drive forward with negative Y (forward)
+                .withVelocityX(-driverController.getLeftY() * MaxSpeed * (rightBumper.getAsBoolean() ? ControllerConstants.FINE_CONTROL_MULT : 1))
+                // Drive left with negative X (left)
+                .withVelocityY(-driverController.getLeftX() * MaxSpeed * (rightBumper.getAsBoolean() ? ControllerConstants.FINE_CONTROL_MULT : 1))
+                // Drive counterclockwise with negative X (left
+                .withRotationalRate(-driverController.getRightX() * MaxAngularRate * (rightBumper.getAsBoolean() ? ControllerConstants.FINE_CONTROL_MULT : 1))
             )
             .ignoringDisable(true)
         );
@@ -121,7 +127,9 @@ public class RobotContainer {
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
         // Double Rectangle
         // TODO : Reset using LL data
-        driverController.back().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative(new Pose2d())));
+        driverController.back().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative(
+            Positions.getStartingPose(PositionInitialization.MIDDLE)
+        )));
 
         // This looks terrible, but I can't think of a better way to do it </3
         if (ControllerConstants.DPAD_DRIVE_INPUT) {
@@ -151,25 +159,25 @@ public class RobotContainer {
     private void initializeSubsystems() {        
         // TODO : Move this to SwerveSubsystem once it's created
 
-        for (PositionInitialization position : PositionInitialization.values()) {
-            this.positionChooser.addOption(position.name(), position);
-            if (position == PositionInitialization.LIMELIGHT) {
-                this.positionChooser.setDefaultOption(position.name(), position);
-            }
-        }
+        // for (PositionInitialization position : PositionInitialization.values()) {
+        //     this.positionChooser.addOption(position.name(), position);
+        //     if (position == PositionInitialization.LIMELIGHT) {
+        //         this.positionChooser.setDefaultOption(position.name(), position);
+        //     }
+        // }
         
-        this.positionChooser.onChange((PositionInitialization position) -> {}
-            // SwerveSubsystem.getInstance().setPose(Positions.getStartingPose(position))
-        );
+        // this.positionChooser.onChange((PositionInitialization position) -> {}
+        //     // SwerveSubsystem.getInstance().setPose(Positions.getStartingPose(position))
+        // );
 
-        this.layout.add("Starting Position", this.positionChooser)
-            .withWidget(BuiltInWidgets.kComboBoxChooser);
-        // Re-set chosen position.
-        this.layout.add("Set Starting Position",
-            Commands.runOnce(() -> {}
-                // SwerveSubsystem.getInstance().setPose(Positions.getStartingPose(this.positionChooser.getSelected()))
-            ).ignoringDisable(true).withName("Set Again"))
-            .withWidget(BuiltInWidgets.kCommand);
+        // this.layout.add("Starting Position", this.positionChooser)
+        //     .withWidget(BuiltInWidgets.kComboBoxChooser);
+        // // Re-set chosen position.
+        // this.layout.add("Set Starting Position",
+        //     Commands.runOnce(() -> {}
+        //         // SwerveSubsystem.getInstance().setPose(Positions.getStartingPose(this.positionChooser.getSelected()))
+        //     ).ignoringDisable(true).withName("Set Again"))
+        //     .withWidget(BuiltInWidgets.kCommand);
     }
 
     /** Register all NamedCommands for PathPlanner use */

@@ -26,5 +26,7 @@ public final class Constants {
         public static final double DEADBAND = 0.075;
         /** Whether or not to accept directional pad input for movement. */
         public static final boolean DPAD_DRIVE_INPUT = true;
+        /** Speed multiplier when using fine-control movement. */
+        public static final double FINE_CONTROL_MULT = 0.15;
     }
 }

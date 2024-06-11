@@ -35,7 +35,8 @@ public class Telemetry {
 
     /* Robot pose for field positioning */
     private final NetworkTable table = inst.getTable("Pose");
-    private final DoubleArrayPublisher fieldPub = table.getDoubleArrayTopic("robotPose").publish();
+    private final DoubleArrayPublisher fieldPubDeg = table.getDoubleArrayTopic("robotPoseDeg").publish();
+    private final DoubleArrayPublisher fieldPubRad = table.getDoubleArrayTopic("robotPoseRad").publish();
     private final StringPublisher fieldTypePub = table.getStringTopic(".type").publish();
 
     /* Robot speeds for general checking */
@@ -80,10 +81,16 @@ public class Telemetry {
         /* Telemeterize the pose */
         Pose2d pose = state.Pose;
         fieldTypePub.set("Field2d");
-        fieldPub.set(new double[] {
+        fieldPubDeg.set(new double[] {
             pose.getX(),
             pose.getY(),
             pose.getRotation().getDegrees()
+        });
+        // Use this one in AdvantageScope
+        fieldPubRad.set(new double[] {
+            pose.getX(),
+            pose.getY(),
+            pose.getRotation().getRadians()
         });
 
         /* Telemeterize the robot's general speeds */
