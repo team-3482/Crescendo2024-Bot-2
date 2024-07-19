@@ -21,5 +21,11 @@ public final class PhysicalConstants {
     public static final class LimelightConstants {
         /** Spams "Bad LL 2D/3D Pose Data" when no data is coming from the NetworkTableInstance for LL. */
         public static final boolean SPAM_BAD_DATA = true;
+        /** Front left Limelight (April Tags) */
+        public static final String FRONT_APRIL_TAG_LL = "limelight-stheno";
+        /** Front right Limelight (Note detection) */
+        public static final String NOTE_DETECTION_LL = "limelight-medusa"; // TODO : configure detection limelight
+        /** Back Limelight (April Tags) */
+        public static final String BACK_APRIL_TAG_LL = "limelight-euryale";
     }
 }

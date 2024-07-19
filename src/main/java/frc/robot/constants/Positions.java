@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.DriverStation;
+import frc.robot.vision.VisionSubsystem;
 
 /**
  * A class that stores positions used for initialization and calculations.
@@ -71,8 +72,7 @@ public final class Positions {
         }
 
         if (alliance.isEmpty() || position == PositionInitialization.LIMELIGHT) {
-            return null; // TODO : VisionSubsystem
-            // return VisionSubsystem.getEstimatedPose();
+            return VisionSubsystem.getInstance().getEstimatedPose();
         }
 
         return Positions.STARTING_POSITIONS.get(alliance.get()).get(position);
@@ -86,7 +86,7 @@ public final class Positions {
     public static Translation3d getSpeakerTarget() throws RuntimeException {
         Optional<DriverStation.Alliance> alliance = DriverStation.getAlliance();
         if (alliance.isEmpty()) {
-            throw new RuntimeException("Speaker Target : Alliance is empty ; cannot target SPEAKER.");
+            throw new RuntimeException("SPEAKER Target : Alliance is empty ; cannot target SPEAKER.");
         }
         return Positions.SPEAKER_TARGET.get(alliance.get());
     }
@@ -99,7 +99,7 @@ public final class Positions {
     public static Pose2d getAmpTarget() throws RuntimeException {
         Optional<DriverStation.Alliance> alliance = DriverStation.getAlliance();
         if (alliance.isEmpty()) {
-            throw new RuntimeException("Amp Target : Alliance is empty ; cannot target AMP.");
+            throw new RuntimeException("AMP Target : Alliance is empty ; cannot target AMP.");
         }
         return Positions.AMP_TARGET.get(alliance.get());
     }

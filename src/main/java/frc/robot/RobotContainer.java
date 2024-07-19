@@ -12,6 +12,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -25,9 +26,10 @@ import frc.robot.constants.Positions.PositionInitialization;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
-import frc.robot.constants.Positions;
+import frc.robot.vision.VisionSubsystem;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
+import frc.robot.constants.Positions;
 
 public class RobotContainer {
     // Thread-safe singleton design pattern.
@@ -50,7 +52,7 @@ public class RobotContainer {
     }
 
     private final SendableChooser<Command> autoChooser;
-    // TODO : Move to SwerveSubsystem once it exists
+    // Position chooser
     private final SendableChooser<PositionInitialization> positionChooser = new SendableChooser<PositionInitialization>();
     private final ShuffleboardLayout layout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT).getLayout("SwerveSubsystem", BuiltInLayouts.kList);
 
@@ -126,9 +128,8 @@ public class RobotContainer {
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
         // Double Rectangle
-        // TODO : Reset using LL data
         driverController.back().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative(
-            Positions.getStartingPose(PositionInitialization.MIDDLE)
+            VisionSubsystem.getInstance().getEstimatedPose()
         )));
 
         // This looks terrible, but I can't think of a better way to do it </3
@@ -153,31 +154,32 @@ public class RobotContainer {
         }
         
         drivetrain.registerTelemetry(logger::telemeterize);
+
+        // Position chooser
+        for (PositionInitialization position : PositionInitialization.values()) {
+            this.positionChooser.addOption(position.name(), position);
+            if (position == PositionInitialization.LIMELIGHT) {
+                this.positionChooser.setDefaultOption(position.name(), position);
+            }
+        }
+        
+        this.positionChooser.onChange((PositionInitialization position) ->
+            drivetrain.seedFieldRelative(Positions.getStartingPose(position))
+        );
+
+        this.layout.add("Starting Position", this.positionChooser)
+            .withWidget(BuiltInWidgets.kComboBoxChooser);
+        // Re-set chosen position.
+        this.layout.add("Set Starting Position",
+            Commands.runOnce(
+                () -> drivetrain.seedFieldRelative(Positions.getStartingPose(this.positionChooser.getSelected()))
+            ).ignoringDisable(true).withName("Set Again"))
+            .withWidget(BuiltInWidgets.kCommand);
     }
 
     /** Creates instances of each subsystem so periodic runs */
-    private void initializeSubsystems() {        
-        // TODO : Move this to SwerveSubsystem once it's created
-
-        // for (PositionInitialization position : PositionInitialization.values()) {
-        //     this.positionChooser.addOption(position.name(), position);
-        //     if (position == PositionInitialization.LIMELIGHT) {
-        //         this.positionChooser.setDefaultOption(position.name(), position);
-        //     }
-        // }
-        
-        // this.positionChooser.onChange((PositionInitialization position) -> {}
-        //     // SwerveSubsystem.getInstance().setPose(Positions.getStartingPose(position))
-        // );
-
-        // this.layout.add("Starting Position", this.positionChooser)
-        //     .withWidget(BuiltInWidgets.kComboBoxChooser);
-        // // Re-set chosen position.
-        // this.layout.add("Set Starting Position",
-        //     Commands.runOnce(() -> {}
-        //         // SwerveSubsystem.getInstance().setPose(Positions.getStartingPose(this.positionChooser.getSelected()))
-        //     ).ignoringDisable(true).withName("Set Again"))
-        //     .withWidget(BuiltInWidgets.kCommand);
+    private void initializeSubsystems() {      
+        VisionSubsystem.getInstance();
     }
 
     /** Register all NamedCommands for PathPlanner use */
