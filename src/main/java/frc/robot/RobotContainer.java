@@ -129,7 +129,8 @@ public class RobotContainer {
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
         // Double Rectangle
         driverController.back().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative(
-            VisionSubsystem.getInstance().getEstimatedPose()
+            // VisionSubsystem.getInstance().getEstimatedPose()
+            Positions.getStartingPose(PositionInitialization.MIDDLE)
         )));
 
         // This looks terrible, but I can't think of a better way to do it </3

@@ -49,15 +49,15 @@ public class VisionSubsystem extends SubsystemBase {
         LimelightHelpers.PoseEstimate backLLData = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.BACK_APRIL_TAG_LL);
 
         // If there is no data, ignore vision updates
-        if (frontLLData.tagCount == 0 && backLLData.tagCount == 0) {
+        if ((frontLLData == null || frontLLData.tagCount == 0) && (backLLData == null || backLLData.tagCount == 0)) {
             return null;
         }
 
         // More tags = more accurate
-        if (frontLLData.tagCount > backLLData.tagCount) {
+        if (backLLData == null || frontLLData.tagCount > backLLData.tagCount) {
             return new Pose2d(frontLLData.pose.getTranslation(), botRotation);
         }
-        else if (backLLData.tagCount > frontLLData.tagCount) {
+        else if (frontLLData == null || backLLData.tagCount > frontLLData.tagCount) {
             return new Pose2d(backLLData.pose.getTranslation(), botRotation);
         }
 
@@ -84,11 +84,14 @@ public class VisionSubsystem extends SubsystemBase {
         TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(0.7, 0.7, 9999999));
 
         for (LimelightHelpers.PoseEstimate d : data) {
-            if (d.avgTagDist < 2) {
+            // TODO : optimize & use both LLs for this correction
+            double angularVelocityRadians = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds().omegaRadiansPerSecond;
+            if (d.avgTagDist < 3 && Units.radiansToDegrees(angularVelocityRadians) <= 180) {
+                System.out.printf("Avg tag distance : %f", d.avgTagDist);
                 TunerConstants.DriveTrain.seedFieldRelative(
                     new Pose2d(
                         TunerConstants.DriveTrain.getState().Pose.getTranslation(),
-                        d.pose.getRotation()
+                        LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.FRONT_APRIL_TAG_LL).pose.getRotation()
                     )
                 );
             }
@@ -111,18 +114,18 @@ public class VisionSubsystem extends SubsystemBase {
         LimelightHelpers.PoseEstimate backLLData = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.BACK_APRIL_TAG_LL);
 
         double angularVelocityRadians = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds().omegaRadiansPerSecond;
-        // If our angular velocity is greater than 720 degrees per second or there is no data, ignore vision updates
-        if (Math.abs(Units.radiansToDegrees(angularVelocityRadians)) > 720
-            || (frontLLData.tagCount == 0 && backLLData.tagCount == 0)) {
+        // If our angular velocity is greater than 360 degrees per second or there is no data, ignore vision updates
+        if (Math.abs(Units.radiansToDegrees(angularVelocityRadians)) > 360
+            || ((frontLLData == null || frontLLData.tagCount == 0) && (backLLData == null || backLLData.tagCount == 0))) {
             return;
         }
 
         // More tags = more accurate
-        if (frontLLData.tagCount > backLLData.tagCount) {
+        if (backLLData == null || frontLLData.tagCount > backLLData.tagCount) {
             updateOdometry(frontLLData);
             return;
         }
-        else if (backLLData.tagCount > frontLLData.tagCount) {
+        else if (frontLLData == null || backLLData.tagCount > frontLLData.tagCount) {
             updateOdometry(backLLData);
             return;
         }
