@@ -30,8 +30,6 @@ public final class Positions {
         ;
     }
 
-    // TODO : redo this file, because it's a freaking mess
-
     /** SPEAKER positions to target */
     private static final Map<DriverStation.Alliance, Translation3d> SPEAKER_TARGET = Map.ofEntries(
         Map.entry(DriverStation.Alliance.Blue, new Translation3d(0, 5.55, 3)),
@@ -51,15 +49,15 @@ public final class Positions {
     /** Initial bot positions used for initializing odometry, blue-alliance relative. */
     private static final Map<DriverStation.Alliance, Map<PositionInitialization, Pose2d>> STARTING_POSITIONS = Map.ofEntries(
         Map.entry(DriverStation.Alliance.Blue, Map.ofEntries(
-            Map.entry(PositionInitialization.TOP, new Pose2d(new Translation2d(0.75, 6.66), Rotation2d.fromDegrees(60))),
+            Map.entry(PositionInitialization.TOP, new Pose2d(new Translation2d(0.75, 6.66), Rotation2d.fromDegrees(240))),
             Map.entry(PositionInitialization.MIDDLE, new Pose2d(new Translation2d(1.34, 5.55), Rotation2d.fromDegrees(180))),
-            Map.entry(PositionInitialization.BOTTOM, new Pose2d(new Translation2d(0.75, 4.45), Rotation2d.fromDegrees(300))))),
+            Map.entry(PositionInitialization.BOTTOM, new Pose2d(new Translation2d(0.75, 4.45), Rotation2d.fromDegrees(120))))),
         Map.entry(DriverStation.Alliance.Red, Map.ofEntries(
             Map.entry(PositionInitialization.TOP, new Pose2d(new Translation2d(15.8, 6.66), Rotation2d.fromDegrees(300))),
             Map.entry(PositionInitialization.MIDDLE, new Pose2d(new Translation2d(15.2, 5.55), Rotation2d.fromDegrees(0))),
             Map.entry(PositionInitialization.BOTTOM, new Pose2d(new Translation2d(15.8, 4.50), Rotation2d.fromDegrees(60)))))
     );
-    
+
     /**
      * Get the starting position of the robot.
      * @param position to get.
