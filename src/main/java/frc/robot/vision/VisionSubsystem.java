@@ -48,6 +48,7 @@ public class VisionSubsystem extends SubsystemBase {
         LimelightHelpers.PoseEstimate frontLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.FRONT_APRIL_TAG_LL);
         LimelightHelpers.PoseEstimate backLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.BACK_APRIL_TAG_LL);
         LimelightHelpers.PoseEstimate backLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.BACK_APRIL_TAG_LL);
+        LimelightData[] limelightDatas = new LimelightData[0];
 
         double angularVelocityRadians = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds().omegaRadiansPerSecond;
         // If our angular velocity is greater than 360 degrees per second or there is no data, ignore vision updates
@@ -56,34 +57,73 @@ public class VisionSubsystem extends SubsystemBase {
                 && (backLLDataMT2 == null || backLLDataMT2.tagCount == 0))
             || (frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
                 && backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE)) {
-            return new LimelightData[0];
+            return limelightDatas;
         }
 
         // More tags = more accurate
         if (backLLDataMT2 == null
             || backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
             || frontLLDataMT2.tagCount > backLLDataMT2.tagCount) {
-            return new LimelightData[]{ new LimelightData(frontLLDataMT, frontLLDataMT2) };
+            limelightDatas = new LimelightData[]{
+                new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2)
+            };
+            return optimizeLimelight(limelightDatas);
         }
         else if (frontLLDataMT2 == null
             || frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
             || backLLDataMT2.tagCount > frontLLDataMT2.tagCount) {
-            return new LimelightData[]{ new LimelightData(backLLDataMT, backLLDataMT2) };
+            limelightDatas = new LimelightData[]{
+                new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2)
+            };
+            return optimizeLimelight(limelightDatas);
         }
 
         // If it's way closer, then trust only that one. 80% is a heuteristic
         if (frontLLDataMT2.avgTagDist < backLLDataMT2.avgTagDist * 0.8) {
-            return new LimelightData[]{ new LimelightData(frontLLDataMT, frontLLDataMT2) };
+            limelightDatas = new LimelightData[]{
+                new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2)
+            };
+            return optimizeLimelight(limelightDatas);
         }
         else if (backLLDataMT2.avgTagDist < frontLLDataMT2.avgTagDist * 0.8) {
-            return new LimelightData[]{ new LimelightData(backLLDataMT, backLLDataMT2) };
+            limelightDatas = new LimelightData[]{
+                new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2)
+            };
+            return optimizeLimelight(limelightDatas);
         }
 
         // Both have the same amount of tags, both are almost equadistant from tags
-        return new LimelightData[]{
-            new LimelightData(frontLLDataMT, frontLLDataMT2),
-            new LimelightData(backLLDataMT, backLLDataMT2)
+        limelightDatas = new LimelightData[]{
+            new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2),
+            new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2)
         };
+        return optimizeLimelight(limelightDatas);
+    }
+
+    /**
+     * A helper method used to optimize Limelight FPS.
+     * @param limelightDatas - The data for the Limelights to optimize.
+     * @return The input data for chaining.
+     */
+    private LimelightData[] optimizeLimelight(LimelightData[] limelightDatas) {
+        // TODO : Smart cropping ?
+        // TODO : Tag filtering ? (similar to smart cropping & pipeline switching)
+        
+        for (LimelightData limelightData : limelightDatas) {
+            // TODO BOT : Test this
+            // Pipeline switching when closer to tags
+            if (limelightData.MegaTag2.avgTagDist < 5) {
+                LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_DOWNSCALE_5_METERS);
+            }
+            else if (limelightData.MegaTag2.avgTagDist < 10) {
+                LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_DOWNSCALE_10_METERS);
+            }
+            else {
+                LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_NORMAL);
+            }
+        }
+
+        return limelightDatas;
     }
 
     /**
@@ -146,6 +186,4 @@ public class VisionSubsystem extends SubsystemBase {
     }
 }
 
-// TODO : Smart cropping ?
-// TODO : Pipeline switching ? (downscaling when closer to tags, cancelling when losing a tag)
-// TODO : Tag filtering ? (similar to smart cropping & pipeline switching)
+// TODO : time methods in this file and try to improve efficiency ?

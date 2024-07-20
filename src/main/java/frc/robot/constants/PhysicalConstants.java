@@ -23,11 +23,18 @@ public final class PhysicalConstants {
         public static final boolean SPAM_BAD_DATA = true;
         /** The distance within which to use Limelight data in meters. */
         public static final int TRUST_TAG_DISTANCE = 12;
+
         /** Front left Limelight (April Tags) */
         public static final String FRONT_APRIL_TAG_LL = "limelight-stheno";
         /** Front right Limelight (Note detection) */
         public static final String NOTE_DETECTION_LL = "limelight-medusa"; // TODO : configure detection limelight
         /** Back Limelight (April Tags) */
         public static final String BACK_APRIL_TAG_LL = "limelight-euryale";
+
+        // Pipelines
+        // TODO BOT : Test pipeline downscale trust
+        public static final int PIPELINE_NORMAL = 0;
+        public static final int PIPELINE_DOWNSCALE_10_METERS = 1;
+        public static final int PIPELINE_DOWNSCALE_5_METERS = 2;
     }
 }

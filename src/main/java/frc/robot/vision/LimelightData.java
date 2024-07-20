@@ -4,19 +4,24 @@ import edu.wpi.first.math.util.Units;
 import frc.robot.swerve.TunerConstants;
 
 /**
- * A helper class used for storing MegaTag and MegaTag2 data from a Limelight
+ * <p>A helper class used for storing MegaTag and MegaTag2 data from a Limelight
  * to avoid unnecessary calls to the NetworkTables API.
+ * <p>MT rotation should not be combined with MT2 pose,
+ * because their timestamps may differ.
  */
 public class LimelightData {
-    public LimelightHelpers.PoseEstimate MegaTag;
-    public LimelightHelpers.PoseEstimate MegaTag2;
+    public final String name;
+    public final LimelightHelpers.PoseEstimate MegaTag;
+    public final LimelightHelpers.PoseEstimate MegaTag2;
 
     /**
      * Creates a new LimelightData object.
+     * @param name - The name of this Limelight.
      * @param MegaTag data.
      * @param MegaTag2 data.
      */
-    public LimelightData(LimelightHelpers.PoseEstimate MegaTag, LimelightHelpers.PoseEstimate MegaTag2) {
+    public LimelightData(String name, LimelightHelpers.PoseEstimate MegaTag, LimelightHelpers.PoseEstimate MegaTag2) {
+        this.name = name;
         this.MegaTag = MegaTag;
         this.MegaTag2 = MegaTag2;
     }
