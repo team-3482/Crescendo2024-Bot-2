@@ -31,12 +31,6 @@ public final class PhysicalConstants {
         /** Back Limelight (April Tags) */
         public static final String BACK_APRIL_TAG_LL = "limelight-euryale";
 
-        // Pipelines
-        // TODO BOT : Test pipeline downscale trust
-        public static final int PIPELINE_NORMAL = 0;
-        public static final int PIPELINE_DOWNSCALE_10_METERS = 1;
-        public static final int PIPELINE_DOWNSCALE_5_METERS = 2;
-
         // All valid tag IDs
         public static final int[] ALL_TAG_IDS = new int[]{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
     }

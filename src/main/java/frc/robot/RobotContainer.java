@@ -139,11 +139,11 @@ public class RobotContainer {
             final Map<Integer, Double[]> povSpeeds = Map.ofEntries(
                 Map.entry(  0, new Double[]{ 0.25,  0.0}),
                 Map.entry( 45, new Double[]{ 0.25, -0.25}),
-                Map.entry( 90, new Double[]{ 0.0, -0.25}),
+                Map.entry( 90, new Double[]{ 0.0,  -0.25}),
                 Map.entry(135, new Double[]{-0.25, -0.25}),
                 Map.entry(180, new Double[]{-0.25,  0.0}),
                 Map.entry(225, new Double[]{-0.25,  0.25}),
-                Map.entry(270, new Double[]{ 0.0,  0.25}),
+                Map.entry(270, new Double[]{ 0.0,   0.25}),
                 Map.entry(315, new Double[]{ 0.25,  0.25})
             );
 

@@ -55,7 +55,7 @@ public class VisionSubsystem extends SubsystemBase {
         LimelightHelpers.PoseEstimate frontLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.FRONT_APRIL_TAG_LL);
         LimelightHelpers.PoseEstimate backLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.BACK_APRIL_TAG_LL);
         LimelightHelpers.PoseEstimate backLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.BACK_APRIL_TAG_LL);
-        
+
         LimelightData[] limelightDatas = new LimelightData[]{
             new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2),
             new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2)
@@ -66,12 +66,11 @@ public class VisionSubsystem extends SubsystemBase {
         double velocity = Math.sqrt(Math.pow(robotChassisSpeeds.vxMetersPerSecond, 2) + Math.pow(robotChassisSpeeds.vyMetersPerSecond, 2));
         // If our angular velocity is greater than 270 deg/s, translational velocity is over 2 m/s, or there is no data, ignore vision updates
         if (Math.abs(Units.radiansToDegrees(robotChassisSpeeds.omegaRadiansPerSecond)) > 270
-            || velocity <= 2 // m/s
+            || Math.abs(velocity) > 2 // m/s
             || ((frontLLDataMT2 == null || frontLLDataMT2.tagCount == 0)
                 && (backLLDataMT2 == null || backLLDataMT2.tagCount == 0))
             || (frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
                 && backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE)) {
-            System.out.println(true); // TODO BOT : Left off here for testing back limelight position data
             return new LimelightData[0];
         }
 
@@ -111,14 +110,13 @@ public class VisionSubsystem extends SubsystemBase {
             
             // Avoid unnecessary optimization for a LL with no tags
             // Reset any optimization that might have been done previously
-            if (limelightData.MegaTag2.tagCount == 0) {
-                LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_NORMAL);
+            if (limelightData.MegaTag2 == null || limelightData.MegaTag2.tagCount == 0) {
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 2);
                 LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, LimelightConstants.ALL_TAG_IDS);
                 LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
                 continue;
             }
 
-            // TODO BOT : Study tag filtering ?
             Set<Integer> nearbyTagsSet = new HashSet<Integer>();
             for (LimelightHelpers.RawFiducial fiducial : limelightData.MegaTag2.rawFiducials) {
                 switch (fiducial.id) {
@@ -132,6 +130,7 @@ public class VisionSubsystem extends SubsystemBase {
                         break;
                     case 5:
                         nearbyTagsSet.addAll(Arrays.asList(5, 4, 3));
+                        break;
                     case 6:
                         nearbyTagsSet.addAll(Arrays.asList(6, 7, 8));
                         break;
@@ -179,16 +178,18 @@ public class VisionSubsystem extends SubsystemBase {
                 );
             }
 
-            // TODO BOT : Test downscaled pipeline switching ?
             // Pipeline switching when closer to tags
-            if (limelightData.MegaTag2.avgTagDist < 5) {
-                LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_DOWNSCALE_5_METERS);
+            if (limelightData.MegaTag2.avgTagDist < 1.75) {
+                // LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_DOWNSCALE_5_METERS);
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 4);
             }
-            else if (limelightData.MegaTag2.avgTagDist < 10) {
-                LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_DOWNSCALE_10_METERS);
+            else if (limelightData.MegaTag2.avgTagDist < 2.5) {
+                // LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_DOWNSCALE_10_METERS);
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 3);
             }
             else {
-                LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_NORMAL);
+                // LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_NORMAL);
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 2);
             }
         }
     }
