@@ -4,10 +4,16 @@
 
 package frc.robot.vision;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.PhysicalConstants.LimelightConstants;
 import frc.robot.swerve.TunerConstants;
@@ -99,18 +105,81 @@ public class VisionSubsystem extends SubsystemBase {
      * @return The input data for chaining.
      */
     private void optimizeLimelights(LimelightData[] limelightDatas) {
-        if (true) return; // While testing LL position data only
-        // TODO : Smart cropping ?
-        // TODO : Tag filtering ? (similar to smart cropping & pipeline switching)
+        // if (true) return; // While testing LL position data only
         
         for (LimelightData limelightData : limelightDatas) {
+            
             // Avoid unnecessary optimization for a LL with no tags
+            // Reset any optimization that might have been done previously
             if (limelightData.MegaTag2.tagCount == 0) {
                 LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_NORMAL);
+                LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, LimelightConstants.ALL_TAG_IDS);
+                LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
                 continue;
             }
 
-            // TODO BOT : Test this
+            // TODO BOT : Study tag filtering ?
+            Set<Integer> nearbyTagsSet = new HashSet<Integer>();
+            for (LimelightHelpers.RawFiducial fiducial : limelightData.MegaTag2.rawFiducials) {
+                switch (fiducial.id) {
+                    case 1:
+                    case 2:
+                        nearbyTagsSet.addAll(Arrays.asList(1, 2, 3, 4));
+                        break;
+                    case 3:
+                    case 4:
+                        nearbyTagsSet.addAll(Arrays.asList(1, 2, 3, 4, 5));
+                        break;
+                    case 5:
+                        nearbyTagsSet.addAll(Arrays.asList(5, 4, 3));
+                    case 6:
+                        nearbyTagsSet.addAll(Arrays.asList(6, 7, 8));
+                        break;
+                    case 7:
+                    case 8:
+                        nearbyTagsSet.addAll(Arrays.asList(6, 7, 8, 9, 10));
+                        break;
+                    case 9:
+                    case 10:
+                        nearbyTagsSet.addAll(Arrays.asList(7, 8, 9, 10));
+                        break;
+                    default: // 11, 12, 13, 14, 15, and 16 have no relevant tags near them.
+                        nearbyTagsSet.add(fiducial.id);
+                        break;
+                }
+            }
+            int[] nearbyTagsArray = nearbyTagsSet.stream().mapToInt(i -> i).toArray();
+            LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, nearbyTagsArray);
+            
+            // TODO BOT : Study smart cropping ?
+            // This algorithm is likely incorrect
+            NetworkTable table = NetworkTableInstance.getDefault().getTable(limelightData.name);
+            /** Horizontal Offset From Principal Pixel To Target */
+            double txnc = table.getEntry("txnc").getDouble(0);
+            /** Vertical Offset From Principal Pixel To Target */
+            double tync = table.getEntry("txnc").getDouble(0);
+            /** Horizontal sidelength of the rough bounding box (0 - 320 pixels) */
+            double thor = table.getEntry("thor").getDouble(0);
+            /** Vertical sidelength of the rough bounding box (0 - 320 pixels) */
+            double tvert = table.getEntry("tvert").getDouble(0);
+
+            // See : https://docs.limelightvision.io/docs/docs-limelight/apis/complete-networktables-api#camera-controls
+            if (thor == 0 || tvert == 0) {
+                LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
+            }
+            else {
+                int halfHorAdjusted = (int) (thor <= 278 ? thor * 1.15 : 320) / 2;
+                int halfVertAdjusted = (int) (tvert <= 278 ? tvert * 1.15 : 320) / 2;
+                LimelightHelpers.setCropWindow(
+                    limelightData.name,
+                    (long) (tync - halfVertAdjusted) / 320,
+                    (long) (tync + halfVertAdjusted) / 320,
+                    (long) (txnc - halfHorAdjusted) / 320,
+                    (long) (txnc + halfHorAdjusted) / 320
+                );
+            }
+
+            // TODO BOT : Test downscaled pipeline switching ?
             // Pipeline switching when closer to tags
             if (limelightData.MegaTag2.avgTagDist < 5) {
                 LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_DOWNSCALE_5_METERS);
