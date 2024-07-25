@@ -6,6 +6,7 @@ package frc.robot.vision;
 
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.PhysicalConstants.LimelightConstants;
@@ -48,56 +49,48 @@ public class VisionSubsystem extends SubsystemBase {
         LimelightHelpers.PoseEstimate frontLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.FRONT_APRIL_TAG_LL);
         LimelightHelpers.PoseEstimate backLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.BACK_APRIL_TAG_LL);
         LimelightHelpers.PoseEstimate backLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.BACK_APRIL_TAG_LL);
-        LimelightData[] limelightDatas = new LimelightData[0];
+        
+        LimelightData[] limelightDatas = new LimelightData[]{
+            new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2),
+            new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2)
+        };
+        optimizeLimelights(limelightDatas);
 
-        double angularVelocityRadians = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds().omegaRadiansPerSecond;
-        // If our angular velocity is greater than 360 degrees per second or there is no data, ignore vision updates
-        if (Math.abs(Units.radiansToDegrees(angularVelocityRadians)) > 360
+        ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
+        double velocity = Math.sqrt(Math.pow(robotChassisSpeeds.vxMetersPerSecond, 2) + Math.pow(robotChassisSpeeds.vyMetersPerSecond, 2));
+        // If our angular velocity is greater than 270 deg/s, translational velocity is over 2 m/s, or there is no data, ignore vision updates
+        if (Math.abs(Units.radiansToDegrees(robotChassisSpeeds.omegaRadiansPerSecond)) > 270
+            || velocity <= 2 // m/s
             || ((frontLLDataMT2 == null || frontLLDataMT2.tagCount == 0)
                 && (backLLDataMT2 == null || backLLDataMT2.tagCount == 0))
             || (frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
                 && backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE)) {
-            return limelightDatas;
+            System.out.println(true); // TODO BOT : Left off here for testing back limelight position data
+            return new LimelightData[0];
         }
 
         // More tags = more accurate
         if (backLLDataMT2 == null
             || backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
             || frontLLDataMT2.tagCount > backLLDataMT2.tagCount) {
-            limelightDatas = new LimelightData[]{
-                new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2)
-            };
-            return optimizeLimelight(limelightDatas);
+                return new LimelightData[]{ limelightDatas[0] };
         }
         else if (frontLLDataMT2 == null
             || frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
             || backLLDataMT2.tagCount > frontLLDataMT2.tagCount) {
-            limelightDatas = new LimelightData[]{
-                new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2)
-            };
-            return optimizeLimelight(limelightDatas);
+                return new LimelightData[]{ limelightDatas[1] };
         }
 
         // If it's way closer, then trust only that one. 80% is a heuteristic
         if (frontLLDataMT2.avgTagDist < backLLDataMT2.avgTagDist * 0.8) {
-            limelightDatas = new LimelightData[]{
-                new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2)
-            };
-            return optimizeLimelight(limelightDatas);
+            return new LimelightData[]{ limelightDatas[0] };
         }
         else if (backLLDataMT2.avgTagDist < frontLLDataMT2.avgTagDist * 0.8) {
-            limelightDatas = new LimelightData[]{
-                new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2)
-            };
-            return optimizeLimelight(limelightDatas);
+            return new LimelightData[]{ limelightDatas[1] };
         }
 
         // Both have the same amount of tags, both are almost equadistant from tags
-        limelightDatas = new LimelightData[]{
-            new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2),
-            new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2)
-        };
-        return optimizeLimelight(limelightDatas);
+        return limelightDatas;
     }
 
     /**
@@ -105,11 +98,18 @@ public class VisionSubsystem extends SubsystemBase {
      * @param limelightDatas - The data for the Limelights to optimize.
      * @return The input data for chaining.
      */
-    private LimelightData[] optimizeLimelight(LimelightData[] limelightDatas) {
+    private void optimizeLimelights(LimelightData[] limelightDatas) {
+        if (true) return; // While testing LL position data only
         // TODO : Smart cropping ?
         // TODO : Tag filtering ? (similar to smart cropping & pipeline switching)
         
         for (LimelightData limelightData : limelightDatas) {
+            // Avoid unnecessary optimization for a LL with no tags
+            if (limelightData.MegaTag2.tagCount == 0) {
+                LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_NORMAL);
+                continue;
+            }
+
             // TODO BOT : Test this
             // Pipeline switching when closer to tags
             if (limelightData.MegaTag2.avgTagDist < 5) {
@@ -122,8 +122,6 @@ public class VisionSubsystem extends SubsystemBase {
                 LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_NORMAL);
             }
         }
-
-        return limelightDatas;
     }
 
     /**
@@ -134,7 +132,8 @@ public class VisionSubsystem extends SubsystemBase {
         LimelightData[] limelightDatas = getLimelightData();
 
         if (limelightDatas.length == 0) {
-            return null;
+            System.err.println("getEstimatedPose() | NO LIMELIGHT DATA, DEFAULTING TO EMTPY POSE2D");
+            return new Pose2d();
         }
         else if (limelightDatas.length == 1) {
             return new Pose2d(
@@ -169,7 +168,7 @@ public class VisionSubsystem extends SubsystemBase {
         for (LimelightData data : limelightDatas) {
             if (data.canTrustRotation()) {
                 // Only trust rotational data
-                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(9999999, 9999999, 0.7));
+                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(9999999, 9999999, 0.5));
                 TunerConstants.DriveTrain.addVisionMeasurement(
                     data.MegaTag.pose,
                     data.MegaTag.timestampSeconds

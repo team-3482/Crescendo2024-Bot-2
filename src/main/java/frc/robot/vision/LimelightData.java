@@ -1,5 +1,6 @@
 package frc.robot.vision;
 
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import frc.robot.swerve.TunerConstants;
 
@@ -27,13 +28,17 @@ public class LimelightData {
     }
 
     /**
-     * Checks if the average tag distance and bot's rotational velocity
+     * Checks if the average tag distance and bot's rotational and translational velocities
      * are reasonable for trusting rotation data.
      * @return Whether rotation data can be trusted.
+     * @apiNote Dist <= 3 meters ; Angular <= 160 deg/s ; Translational <= 2
      */
     public boolean canTrustRotation() {
-        double angularVelocityRadians = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds().omegaRadiansPerSecond;
+        ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
+        double velocity = Math.sqrt(Math.pow(robotChassisSpeeds.vxMetersPerSecond, 2) + Math.pow(robotChassisSpeeds.vyMetersPerSecond, 2));
                                         // 3 Meters
-        return this.MegaTag2.avgTagDist < 3 && Units.radiansToDegrees(angularVelocityRadians) <= 180;
+        return this.MegaTag2.avgTagDist <= 3
+            && Units.radiansToDegrees(robotChassisSpeeds.omegaRadiansPerSecond) <= 160
+            && velocity <= 2;
     }
 }

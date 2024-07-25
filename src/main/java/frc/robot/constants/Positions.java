@@ -70,6 +70,7 @@ public final class Positions {
         }
 
         if (alliance.isEmpty() || position == PositionInitialization.LIMELIGHT) {
+            System.out.println("getStartingPose() | Using LIMELIGHT data");
             return VisionSubsystem.getInstance().getEstimatedPose();
         }
 
