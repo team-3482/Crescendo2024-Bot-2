@@ -33,5 +33,8 @@ public final class PhysicalConstants {
 
         // All valid tag IDs
         public static final int[] ALL_TAG_IDS = new int[]{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+        // Field of view of LL3G, used for Smart Cropping
+        public static final double FOV_X = 82;
+        public static final double FOV_Y = 56.2;
     }
 }
