@@ -155,23 +155,51 @@ public class VisionSubsystem extends SubsystemBase {
             }
             else {
                 // Use limelightData.MegaTag2.rawFiducials[]
-                LimelightHelpers.setCropWindow(
-                    limelightData.name,
-                    0, 0, 0, 0
-                );
+                LimelightHelpers.RawFiducial txncBig = null;
+                LimelightHelpers.RawFiducial txncSmall = null;
+                LimelightHelpers.RawFiducial tyncBig = null;
+                LimelightHelpers.RawFiducial tyncSmall = null;
+                double targetSize = 0;
+
+                for (LimelightHelpers.RawFiducial fiducial: limelightData.MegaTag2.rawFiducials) {
+                    targetSize = Math.sqrt(fiducial.ta * LimelightConstants.FOV_X * LimelightConstants.FOV_Y) / 2;
+                    System.out.printf("ta %f ; size %f%n", fiducial.ta, targetSize);
+                    if (true) return;
+                    
+                    if (txncBig == null || fiducial.txnc + targetSize > txncBig.txnc) {
+                        txncBig = fiducial;
+                    }
+                    else if (txncSmall == null || fiducial.txnc - targetSize < txncSmall.txnc) {
+                        txncSmall = fiducial;
+                    }
+
+                    if (tyncBig == null || fiducial.tync + targetSize > tyncBig.tync) {
+                        tyncBig = fiducial;
+                    }
+                    else if (tyncSmall == null || fiducial.tync - targetSize < tyncSmall.tync) {
+                        tyncSmall = fiducial;
+                    }
+                }
+
+                System.out.printf("txnc small %f ; txnc big %f, tync small %f, tync big %f%n",
+                    txncSmall.txnc, txncBig.txnc, tyncSmall.tync, tyncBig.tync);
+                System.out.printf("txnc small %d ; txnc big %d, tync small %d, tync big %d%n",
+                    txncSmall.id, txncBig.id, tyncSmall.id, tyncBig.id);
+
+                // LimelightHelpers.setCropWindow(
+                //     limelightData.name,
+                    
+                // );
             }
 
             // Pipeline switching when closer to tags
             if (limelightData.MegaTag2.avgTagDist < 1.75) {
-                // LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_DOWNSCALE_5_METERS);
                 LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 4);
             }
             else if (limelightData.MegaTag2.avgTagDist < 2.5) {
-                // LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_DOWNSCALE_10_METERS);
                 LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 3);
             }
             else {
-                // LimelightHelpers.setPipelineIndex(limelightData.name, LimelightConstants.PIPELINE_NORMAL);
                 LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 2);
             }
         }
