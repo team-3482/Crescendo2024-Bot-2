@@ -14,6 +14,8 @@ public class LimelightData {
     public final String name;
     public final LimelightHelpers.PoseEstimate MegaTag;
     public final LimelightHelpers.PoseEstimate MegaTag2;
+    /** Flag set after optimization to avoid re-optimizing data twice in a row on low FPS. */
+    public boolean optimized;
 
     /**
      * Creates a new LimelightData object.
@@ -25,6 +27,7 @@ public class LimelightData {
         this.name = name;
         this.MegaTag = MegaTag;
         this.MegaTag2 = MegaTag2;
+        this.optimized = false;
     }
 
     /**

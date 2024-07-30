@@ -6,8 +6,8 @@ package frc.robot.vision;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -36,26 +36,20 @@ public class VisionSubsystem extends SubsystemBase {
         return instance;
     }
 
-    /**
-     * Tags a tag ID and returns whether to expect one on the left, right, or neither.
-     * Left : -1 ; Right : +1 ; Neither : 0
-     */
-    private Function<Integer, Integer> expandDirection = (Integer id) -> {
-        switch (id) {
-            case 1:
-            case 3:
-            case 7:
-            case 9:
-                return -1;
-            case 2:
-            case 4:
-            case 8:
-            case 10:
-                return 1;
-            default:
-                return 0;
-        }
-    };
+    /** Latest Limelight data. May contain faulty data unsuitable for odometry. */
+    private LimelightData[] limelightDatas = new LimelightData[2];
+    /** Last heartbeat of the front LL (updated every frame) */
+    private long lastHeartbeatStheno = 0;
+    /** Last heartbeat of the back LL (updated every frame) */
+    private long lastHeartbeatEuryale = 0;
+
+    // Lists used for tag filtering. Final to reduce wasted processing power.
+    private final List<Integer> BLUE_SOURCE = Arrays.asList(1, 2, 3, 4);
+    private final List<Integer> RED_SPEAKER = Arrays.asList(1, 2, 3, 4, 5);
+    private final List<Integer> RED_AMP = Arrays.asList(5, 4, 3);
+    private final List<Integer> BLUE_AMP = Arrays.asList(6, 7, 8);
+    private final List<Integer> BLUE_SPEAKER = Arrays.asList(6, 7, 8, 9, 10);
+    private final List<Integer> RED_SOURCE = Arrays.asList(7, 8, 9, 10);
 
     /** Creates a new ExampleSubsystem. */
     private VisionSubsystem() {
@@ -63,30 +57,42 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     /**
-     * Gets the most trustworthy data from each Limelight.
+     * Gets the most trustworthy data from each Limelight. Also updates {@link VisionSubsystem#limelightDatas} and heartbeats.
      * @return LimelightData for each trustworthy Limelight data.
+     * @apiNote Will theoretically stop updating data when the heartbeat has reset.
+     * However, this happens at 2e9 frames, which would take 96 days at a consistent 240 fps .
      */
     private LimelightData[] getLimelightData() {
         double rotationDegrees = TunerConstants.DriveTrain.getState().Pose.getRotation().getDegrees();
         LimelightHelpers.SetRobotOrientation(LimelightConstants.FRONT_APRIL_TAG_LL, rotationDegrees, 0, 0, 0, 0, 0);
         LimelightHelpers.SetRobotOrientation(LimelightConstants.BACK_APRIL_TAG_LL, rotationDegrees, 0, 0, 0, 0, 0);
         
-        LimelightHelpers.PoseEstimate frontLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.FRONT_APRIL_TAG_LL);
-        LimelightHelpers.PoseEstimate frontLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.FRONT_APRIL_TAG_LL);
-        LimelightHelpers.PoseEstimate backLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.BACK_APRIL_TAG_LL);
-        LimelightHelpers.PoseEstimate backLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.BACK_APRIL_TAG_LL);
+        LimelightHelpers.PoseEstimate frontLLDataMT2 = null;
+        LimelightHelpers.PoseEstimate backLLDataMT2 = null;
+        long heartbeatStheno = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.FRONT_APRIL_TAG_LL, "hb").getInteger(-1);
+        long heartbeatEuryale = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.BACK_APRIL_TAG_LL, "hb").getInteger(-1);
 
-        LimelightData[] limelightDatas = new LimelightData[]{
-            new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2),
-            new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2)
-        };
-        optimizeLimelights(limelightDatas);
+        if (heartbeatStheno == -1 || this.lastHeartbeatStheno < heartbeatStheno) {
+            frontLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.FRONT_APRIL_TAG_LL);
+            LimelightHelpers.PoseEstimate frontLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.FRONT_APRIL_TAG_LL);
+            this.limelightDatas[0] = new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2);
+            this.lastHeartbeatStheno = heartbeatStheno == -1 ? this.lastHeartbeatStheno : heartbeatStheno;
+        }
+
+        if (heartbeatEuryale == -1 || this.lastHeartbeatEuryale < heartbeatEuryale) {
+            backLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.BACK_APRIL_TAG_LL);
+            LimelightHelpers.PoseEstimate backLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.BACK_APRIL_TAG_LL);
+            this.limelightDatas[1] = new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2);
+            this.lastHeartbeatEuryale = heartbeatEuryale == -1 ? this.lastHeartbeatEuryale : heartbeatEuryale;
+        }
 
         ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
         double velocity = Math.sqrt(Math.pow(robotChassisSpeeds.vxMetersPerSecond, 2) + Math.pow(robotChassisSpeeds.vyMetersPerSecond, 2));
-        // If our angular velocity is greater than 270 deg/s, translational velocity is over 2 m/s, or there is no data, ignore vision updates
+        // If our angular velocity is greater than 270 deg/s, translational velocity is over 2 m/s,
+        // the data is outdated (no new heartbeat), or there is no data, ignore vision updates.
         if (Math.abs(Units.radiansToDegrees(robotChassisSpeeds.omegaRadiansPerSecond)) > 270
             || Math.abs(velocity) > 2 // m/s
+            || (this.lastHeartbeatEuryale != heartbeatEuryale && this.lastHeartbeatStheno != heartbeatStheno)
             || ((frontLLDataMT2 == null || frontLLDataMT2.tagCount == 0)
                 && (backLLDataMT2 == null || backLLDataMT2.tagCount == 0))
             || (frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
@@ -94,37 +100,42 @@ public class VisionSubsystem extends SubsystemBase {
             return new LimelightData[0];
         }
 
-        // More tags = more accurate
-        if (backLLDataMT2 == null
+        // More tags = more accurate. Also eliminate the other if it happens to be invalid.
+        if (this.lastHeartbeatEuryale != heartbeatEuryale
+            || backLLDataMT2 == null
             || backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
             || frontLLDataMT2.tagCount > backLLDataMT2.tagCount) {
-                return new LimelightData[]{ limelightDatas[0] };
+                return new LimelightData[]{ this.limelightDatas[0] };
         }
-        else if (frontLLDataMT2 == null
+        else if (this.lastHeartbeatStheno != heartbeatStheno
+            || frontLLDataMT2 == null
             || frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
             || backLLDataMT2.tagCount > frontLLDataMT2.tagCount) {
-                return new LimelightData[]{ limelightDatas[1] };
+                return new LimelightData[]{ this.limelightDatas[1] };
         }
 
         // If it's way closer, then trust only that one. 80% is a heuteristic
         if (frontLLDataMT2.avgTagDist < backLLDataMT2.avgTagDist * 0.8) {
-            return new LimelightData[]{ limelightDatas[0] };
+            return new LimelightData[]{ this.limelightDatas[0] };
         }
         else if (backLLDataMT2.avgTagDist < frontLLDataMT2.avgTagDist * 0.8) {
-            return new LimelightData[]{ limelightDatas[1] };
+            return new LimelightData[]{ this.limelightDatas[1] };
         }
 
         // Both have the same amount of tags, both are almost equadistant from tags
-        return limelightDatas;
+        return this.limelightDatas;
     }
 
     /**
      * A helper method used to optimize Limelight FPS.
-     * @param limelightDatas - The data for the Limelights to optimize.
-     * @return The input data for chaining.
      */
-    private void optimizeLimelights(LimelightData[] limelightDatas) {
-        for (LimelightData limelightData : limelightDatas) {
+    private void optimizeLimelights() {
+        byte index = 0; // Used only for setting the optimized flag, so that this can be a for-each loop.
+        for (LimelightData limelightData : this.limelightDatas) {
+            if (!limelightData.optimized) {
+                this.limelightDatas[index++].optimized = true;
+            }
+            
             // Avoid unnecessary optimization for a LL with no tags
             // Reset any optimization that might have been done previously
             if (limelightData.MegaTag2 == null || limelightData.MegaTag2.tagCount == 0) {
@@ -140,33 +151,37 @@ public class VisionSubsystem extends SubsystemBase {
                 switch (fiducial.id) {
                     case 1:
                     case 2:
-                        nearbyTagsSet.addAll(Arrays.asList(1, 2, 3, 4));
-                        break;
+                        nearbyTagsSet.addAll(this.BLUE_SOURCE);
                     case 3:
                     case 4:
-                        nearbyTagsSet.addAll(Arrays.asList(1, 2, 3, 4, 5));
-                        break;
+                        nearbyTagsSet.addAll(this.RED_SPEAKER);
                     case 5:
-                        nearbyTagsSet.addAll(Arrays.asList(5, 4, 3));
-                        break;
+                        nearbyTagsSet.addAll(this.RED_AMP);
                     case 6:
-                        nearbyTagsSet.addAll(Arrays.asList(6, 7, 8));
-                        break;
+                        nearbyTagsSet.addAll(this.BLUE_AMP);
                     case 7:
                     case 8:
-                        nearbyTagsSet.addAll(Arrays.asList(6, 7, 8, 9, 10));
-                        break;
+                        nearbyTagsSet.addAll(this.BLUE_SPEAKER);
                     case 9:
                     case 10:
-                        nearbyTagsSet.addAll(Arrays.asList(7, 8, 9, 10));
-                        break;
+                        nearbyTagsSet.addAll(this.RED_SOURCE);
                     default: // 11, 12, 13, 14, 15, and 16 have no relevant tags near them.
                         nearbyTagsSet.add(fiducial.id);
-                        break;
                 }
             }
             int[] nearbyTagsArray = nearbyTagsSet.stream().mapToInt(i -> i).toArray();
             LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, nearbyTagsArray);
+
+            // Downscaling closer to tags
+            if (limelightData.MegaTag2.avgTagDist < 1.75) {
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 3);
+            }
+            else if (limelightData.MegaTag2.avgTagDist < 2.5) {
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 2);
+            }
+            else {
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 1.5f);
+            }
             
             // Smart cropping follows AprilTags
             // See : https://docs.limelightvision.io/docs/docs-limelight/apis/complete-networktables-api#basic-targeting-data
@@ -174,13 +189,14 @@ public class VisionSubsystem extends SubsystemBase {
                 LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
             }
             else {
-                // Use limelightData.MegaTag2.rawFiducials[]
                 LimelightHelpers.RawFiducial txncBig = null;
                 LimelightHelpers.RawFiducial txncSmall = null;
                 LimelightHelpers.RawFiducial tyncBig = null;
                 LimelightHelpers.RawFiducial tyncSmall = null;
                 double targetSize = 0;
                 
+                // Finds the txnc and tync that are furthest from the crosshair
+                // (for largest bounding box that will include all targets on screen)
                 for (LimelightHelpers.RawFiducial fiducial: limelightData.MegaTag2.rawFiducials) {
                     targetSize = Math.sqrt(fiducial.ta * LimelightConstants.FOV_AREA) / 2;
                     
@@ -199,34 +215,66 @@ public class VisionSubsystem extends SubsystemBase {
                     }
                 }
                 
+                // The formulas used below create the bounding boxes around targets and work in this way :
+                //
+                // The position of the target (x or y) that was found to be the furthest from the principal pixel for that direction
+                // (largest/smallest x and largest/smallest y)
+                //     MINUS for the smallest positions (left/bottom of the box) or PLUS for the largest positions (right/top of the box)
+                //         The length of the side of the targets — This is found in the following way :
+                //           We know the FOV area (LimelightConstants.FOV_AREA) -> We know percentage of screen target occupies (ta) ->
+                //           Targets are roughly squares at most angles so sqrt(target area in pixels) = side lengths
+                //         Which is MULTIPLIED by a function that scales with distance (further away needs larger box due
+                //         to bot movements having more impact on target position from the camera's POV) in the following way :
+                //           1.75 (heuteristic, this determines general box size) * ln(distance to target + 1)
+                //           The +1 is added to the natural log to avoid a negative value for distances of less than 1 meter,
+                //           even if those are very rare. Natural log is probably not the best function for this, but it works well enough.
+                //
+                // Together this comes out as (be careful to follow order of operations) :
+                // Target Position +/- Target Length * (1.75 * ln(Distance + 1))
+                //
+                // In the end this is DIVIDED by HALF of the rough width or height of the FOV,
+                // because Limelights expect cropping to be [-1.0, 1.0].
+
                 double xSmall = (txncSmall.txnc - Math.sqrt(txncSmall.ta * LimelightConstants.FOV_AREA) * (1.75 * Math.log(txncSmall.distToCamera + 1)))
-                / (LimelightConstants.FOV_X / 2);
+                    / (LimelightConstants.FOV_X / 2);
                 double xBig = (txncBig.txnc + Math.sqrt(txncBig.ta * LimelightConstants.FOV_AREA) * (1.75 * Math.log(txncBig.distToCamera + 1)))
-                / (LimelightConstants.FOV_X / 2);
+                    / (LimelightConstants.FOV_X / 2);
                 
                 LimelightHelpers.setCropWindow(
                     limelightData.name,
-                    this.expandDirection.apply(txncSmall.id) < 0 ? xSmall - 1.5 * Math.abs(xBig - xSmall) : xSmall,
-                    this.expandDirection.apply(txncBig.id) > 0 ? xBig + 1.5 * Math.abs(xBig - xSmall) : xBig,
+                    getNearbyTagDirection(txncSmall.id) < 0 ? xSmall - 1.5 * Math.abs(xBig - xSmall) : xSmall,
+                    getNearbyTagDirection(txncBig.id) > 0 ? xBig + 1.5 * Math.abs(xBig - xSmall) : xBig,
                     (tyncSmall.tync - Math.sqrt(tyncSmall.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(tyncBig.distToCamera + 1)))
                         / (LimelightConstants.FOV_Y / 2),
                     (tyncBig.tync + Math.sqrt(tyncBig.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(tyncSmall.distToCamera + 1)))
                         / (LimelightConstants.FOV_Y / 2)
                 );
             }
-
-            // Downscaling closer to tags
-            if (limelightData.MegaTag2.avgTagDist < 1.75) {
-                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 3);
-            }
-            else if (limelightData.MegaTag2.avgTagDist < 2.5) {
-                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 2);
-            }
-            else {
-                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 1.5f);
-            }
         }
     }
+    
+    /**
+     * This is a helper for {@link VisionSubsystem#optimizeLimelights(LimelightData[])} smart cropping.
+     * @param id - The target ID to consider.
+     * @return Whether to expect another tag on the left, right, or neither.
+     * @apiNote Left : -1 ; Right : +1 ; Neither : 0.
+     */
+    private int getNearbyTagDirection(int id) {
+        switch (id) {
+            case 1:
+            case 3:
+            case 7:
+            case 9:
+                return -1;
+            case 2:
+            case 4:
+            case 8:
+            case 10:
+                return 1;
+            default:
+                return 0;
+        }
+    };
 
     /**
      * Gets the most trustworthy data from each Limelight and returns a {@link Pose2d} object.
@@ -267,7 +315,12 @@ public class VisionSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
+        // TODO BOT : Timing
+        long startTime = System.currentTimeMillis();
+
         LimelightData[] limelightDatas = getLimelightData();
+
+        System.out.printf("Get data : %d ms%n", System.currentTimeMillis() - startTime);
 
         for (LimelightData data : limelightDatas) {
             if (data.canTrustRotation()) {
@@ -286,7 +339,13 @@ public class VisionSubsystem extends SubsystemBase {
                 data.MegaTag2.timestampSeconds
             );
         }
+        
+        System.out.printf("Update position : %d ms%n", System.currentTimeMillis() - startTime);
+
+        long optiStartTime = System.currentTimeMillis();
+        optimizeLimelights();
+        long finalTime = System.currentTimeMillis();
+        System.out.printf("Optimize LLs : %d ms%n", finalTime - optiStartTime);
+        System.out.printf("Final : %d ms%n", finalTime - startTime);
     }
 }
-
-// TODO : time methods in this file and try to improve efficiency ?
