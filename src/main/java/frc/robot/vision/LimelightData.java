@@ -7,8 +7,7 @@ import frc.robot.swerve.TunerConstants;
 /**
  * <p>A helper class used for storing MegaTag and MegaTag2 data from a Limelight
  * to avoid unnecessary calls to the NetworkTables API.
- * <p>MT rotation should not be combined with MT2 pose,
- * because their timestamps may differ.
+ * <p>MT rotation should not be combined with MT2 pose, because their timestamps may differ.
  */
 public class LimelightData {
     public final String name;
@@ -34,7 +33,7 @@ public class LimelightData {
      * Checks if the average tag distance and bot's rotational and translational velocities
      * are reasonable for trusting rotation data.
      * @return Whether rotation data can be trusted.
-     * @apiNote Dist <= 3 meters ; Angular <= 160 deg/s ; Translational <= 2
+     * @apiNote Dist <= 3 meters ; Angular <= 160 deg/s ; Translational <= 2.
      */
     public boolean canTrustRotation() {
         ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
