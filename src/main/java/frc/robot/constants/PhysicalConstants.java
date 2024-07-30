@@ -36,5 +36,6 @@ public final class PhysicalConstants {
         // Field of view of LL3G, used for Smart Cropping
         public static final double FOV_X = 82;
         public static final double FOV_Y = 56.2;
+        public static final double FOV_AREA = FOV_X * FOV_Y;
     }
 }

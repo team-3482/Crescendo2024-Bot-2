@@ -7,6 +7,7 @@ package frc.robot.vision;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -34,6 +35,27 @@ public class VisionSubsystem extends SubsystemBase {
         }
         return instance;
     }
+
+    /**
+     * Tags a tag ID and returns whether to expect one on the left, right, or neither.
+     * Left : -1 ; Right : +1 ; Neither : 0
+     */
+    private Function<Integer, Integer> expandDirection = (Integer id) -> {
+        switch (id) {
+            case 1:
+            case 3:
+            case 7:
+            case 9:
+                return -1;
+            case 2:
+            case 4:
+            case 8:
+            case 10:
+                return 1;
+            default:
+                return 0;
+        }
+    };
 
     /** Creates a new ExampleSubsystem. */
     private VisionSubsystem() {
@@ -102,19 +124,17 @@ public class VisionSubsystem extends SubsystemBase {
      * @return The input data for chaining.
      */
     private void optimizeLimelights(LimelightData[] limelightDatas) {
-        // if (true) return; // While testing LL position data only
-        
         for (LimelightData limelightData : limelightDatas) {
-            
             // Avoid unnecessary optimization for a LL with no tags
             // Reset any optimization that might have been done previously
             if (limelightData.MegaTag2 == null || limelightData.MegaTag2.tagCount == 0) {
-                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 2);
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 1.5f);
                 LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, LimelightConstants.ALL_TAG_IDS);
                 LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
                 continue;
             }
 
+            // Tag filtering
             Set<Integer> nearbyTagsSet = new HashSet<Integer>();
             for (LimelightHelpers.RawFiducial fiducial : limelightData.MegaTag2.rawFiducials) {
                 switch (fiducial.id) {
@@ -148,7 +168,7 @@ public class VisionSubsystem extends SubsystemBase {
             int[] nearbyTagsArray = nearbyTagsSet.stream().mapToInt(i -> i).toArray();
             LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, nearbyTagsArray);
             
-            // TODO BOT : Fix smart cropping ?
+            // Smart cropping follows AprilTags
             // See : https://docs.limelightvision.io/docs/docs-limelight/apis/complete-networktables-api#basic-targeting-data
             if (limelightData.MegaTag2.rawFiducials.length == 0) {
                 LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
@@ -160,47 +180,50 @@ public class VisionSubsystem extends SubsystemBase {
                 LimelightHelpers.RawFiducial tyncBig = null;
                 LimelightHelpers.RawFiducial tyncSmall = null;
                 double targetSize = 0;
-
+                
                 for (LimelightHelpers.RawFiducial fiducial: limelightData.MegaTag2.rawFiducials) {
-                    targetSize = Math.sqrt(fiducial.ta * LimelightConstants.FOV_X * LimelightConstants.FOV_Y) / 2;
-                    System.out.printf("ta %f ; size %f%n", fiducial.ta, targetSize);
-                    if (true) return;
+                    targetSize = Math.sqrt(fiducial.ta * LimelightConstants.FOV_AREA) / 2;
                     
                     if (txncBig == null || fiducial.txnc + targetSize > txncBig.txnc) {
                         txncBig = fiducial;
                     }
-                    else if (txncSmall == null || fiducial.txnc - targetSize < txncSmall.txnc) {
+                    if (txncSmall == null || fiducial.txnc - targetSize < txncSmall.txnc) {
                         txncSmall = fiducial;
                     }
-
+                    
                     if (tyncBig == null || fiducial.tync + targetSize > tyncBig.tync) {
                         tyncBig = fiducial;
                     }
-                    else if (tyncSmall == null || fiducial.tync - targetSize < tyncSmall.tync) {
+                    if (tyncSmall == null || fiducial.tync - targetSize < tyncSmall.tync) {
                         tyncSmall = fiducial;
                     }
                 }
-
-                System.out.printf("txnc small %f ; txnc big %f, tync small %f, tync big %f%n",
-                    txncSmall.txnc, txncBig.txnc, tyncSmall.tync, tyncBig.tync);
-                System.out.printf("txnc small %d ; txnc big %d, tync small %d, tync big %d%n",
-                    txncSmall.id, txncBig.id, tyncSmall.id, tyncBig.id);
-
-                // LimelightHelpers.setCropWindow(
-                //     limelightData.name,
-                    
-                // );
+                
+                double xSmall = (txncSmall.txnc - Math.sqrt(txncSmall.ta * LimelightConstants.FOV_AREA) * (1.75 * Math.log(txncSmall.distToCamera + 1)))
+                / (LimelightConstants.FOV_X / 2);
+                double xBig = (txncBig.txnc + Math.sqrt(txncBig.ta * LimelightConstants.FOV_AREA) * (1.75 * Math.log(txncBig.distToCamera + 1)))
+                / (LimelightConstants.FOV_X / 2);
+                
+                LimelightHelpers.setCropWindow(
+                    limelightData.name,
+                    this.expandDirection.apply(txncSmall.id) < 0 ? xSmall - 1.5 * Math.abs(xBig - xSmall) : xSmall,
+                    this.expandDirection.apply(txncBig.id) > 0 ? xBig + 1.5 * Math.abs(xBig - xSmall) : xBig,
+                    (tyncSmall.tync - Math.sqrt(tyncSmall.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(tyncBig.distToCamera + 1)))
+                        / (LimelightConstants.FOV_Y / 2),
+                    (tyncBig.tync + Math.sqrt(tyncBig.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(tyncSmall.distToCamera + 1)))
+                        / (LimelightConstants.FOV_Y / 2)
+                );
             }
 
-            // Pipeline switching when closer to tags
+            // Downscaling closer to tags
             if (limelightData.MegaTag2.avgTagDist < 1.75) {
-                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 4);
-            }
-            else if (limelightData.MegaTag2.avgTagDist < 2.5) {
                 LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 3);
             }
-            else {
+            else if (limelightData.MegaTag2.avgTagDist < 2.5) {
                 LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 2);
+            }
+            else {
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 1.5f);
             }
         }
     }
