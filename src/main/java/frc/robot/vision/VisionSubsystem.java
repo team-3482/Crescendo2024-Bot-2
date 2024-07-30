@@ -95,30 +95,35 @@ public class VisionSubsystem extends SubsystemBase {
             || (this.lastHeartbeatEuryale != heartbeatEuryale && this.lastHeartbeatStheno != heartbeatStheno)
             || ((frontLLDataMT2 == null || frontLLDataMT2.tagCount == 0)
                 && (backLLDataMT2 == null || backLLDataMT2.tagCount == 0))
-            || (frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
-                && backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE)) {
+            || (frontLLDataMT2 != null && frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
+                && backLLDataMT2 != null && backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE)) {
             return new LimelightData[0];
         }
 
+        if (frontLLDataMT2 == null) {
+            frontLLDataMT2 = this.limelightDatas[0].MegaTag2;
+        }
+        if (backLLDataMT2 == null) {
+            backLLDataMT2 = this.limelightDatas[1].MegaTag2;
+        }
+
         // More tags = more accurate. Also eliminate the other if it happens to be invalid.
-        if (this.lastHeartbeatEuryale != heartbeatEuryale
-            || backLLDataMT2 == null
-            || backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
-            || frontLLDataMT2.tagCount > backLLDataMT2.tagCount) {
+        if (this.lastHeartbeatStheno == heartbeatStheno
+            && (backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
+                || frontLLDataMT2.tagCount > backLLDataMT2.tagCount)) {
                 return new LimelightData[]{ this.limelightDatas[0] };
         }
-        else if (this.lastHeartbeatStheno != heartbeatStheno
-            || frontLLDataMT2 == null
-            || frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
-            || backLLDataMT2.tagCount > frontLLDataMT2.tagCount) {
+        else if (this.lastHeartbeatEuryale == heartbeatEuryale
+            && (frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
+                || backLLDataMT2.tagCount > frontLLDataMT2.tagCount)) {
                 return new LimelightData[]{ this.limelightDatas[1] };
         }
 
-        // If it's way closer, then trust only that one. 80% is a heuteristic
-        if (frontLLDataMT2.avgTagDist < backLLDataMT2.avgTagDist * 0.8) {
+        // If it's way closer, then trust only that one. 90% is a heuteristic
+        if (this.lastHeartbeatStheno == heartbeatStheno && frontLLDataMT2.avgTagDist < backLLDataMT2.avgTagDist * 0.9) {
             return new LimelightData[]{ this.limelightDatas[0] };
         }
-        else if (backLLDataMT2.avgTagDist < frontLLDataMT2.avgTagDist * 0.8) {
+        else if (this.lastHeartbeatEuryale == heartbeatEuryale && backLLDataMT2.avgTagDist < frontLLDataMT2.avgTagDist * 0.9) {
             return new LimelightData[]{ this.limelightDatas[1] };
         }
 
@@ -134,6 +139,9 @@ public class VisionSubsystem extends SubsystemBase {
         for (LimelightData limelightData : this.limelightDatas) {
             if (!limelightData.optimized) {
                 this.limelightDatas[index++].optimized = true;
+            }
+            else {
+                return;
             }
             
             // Avoid unnecessary optimization for a LL with no tags
@@ -225,19 +233,19 @@ public class VisionSubsystem extends SubsystemBase {
                 //           Targets are roughly squares at most angles so sqrt(target area in pixels) = side lengths
                 //         Which is MULTIPLIED by a function that scales with distance (further away needs larger box due
                 //         to bot movements having more impact on target position from the camera's POV) in the following way :
-                //           1.75 (heuteristic, this determines general box size) * ln(distance to target + 1)
+                //           2 (heuteristic, this determines general box size) * ln(distance to target + 1)
                 //           The +1 is added to the natural log to avoid a negative value for distances of less than 1 meter,
                 //           even if those are very rare. Natural log is probably not the best function for this, but it works well enough.
                 //
                 // Together this comes out as (be careful to follow order of operations) :
-                // Target Position +/- Target Length * (1.75 * ln(Distance + 1))
+                // Target Position +/- Target Length * (2 * ln(Distance + 1))
                 //
                 // In the end this is DIVIDED by HALF of the rough width or height of the FOV,
                 // because Limelights expect cropping to be [-1.0, 1.0].
 
-                double xSmall = (txncSmall.txnc - Math.sqrt(txncSmall.ta * LimelightConstants.FOV_AREA) * (1.75 * Math.log(txncSmall.distToCamera + 1)))
+                double xSmall = (txncSmall.txnc - Math.sqrt(txncSmall.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(txncSmall.distToCamera + 1)))
                     / (LimelightConstants.FOV_X / 2);
-                double xBig = (txncBig.txnc + Math.sqrt(txncBig.ta * LimelightConstants.FOV_AREA) * (1.75 * Math.log(txncBig.distToCamera + 1)))
+                double xBig = (txncBig.txnc + Math.sqrt(txncBig.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(txncBig.distToCamera + 1)))
                     / (LimelightConstants.FOV_X / 2);
                 
                 LimelightHelpers.setCropWindow(
@@ -301,10 +309,9 @@ public class VisionSubsystem extends SubsystemBase {
                 limelightDatas[0].MegaTag2.pose.getTranslation().plus(limelightDatas[1].MegaTag2.pose.getTranslation()).div(2),
                 limelightDatas[0].canTrustRotation() ?
                     // First rotation / 2 + Second rotation / 2
-                    /* 
-                     * This is done to avoid problems due to Rotation2d being [0, 360) 
-                     * Ex : 180+180=0 followed by 0/2=0 when it should be 180+180=360 and 360/2=180.
-                     */
+                    //
+                    // This is done to avoid problems due to Rotation2d being [0, 360) 
+                    // Ex : 180+180=0 followed by 0/2=0 when it should be 180+180=360 and 360/2=180.
                     limelightDatas[0].MegaTag.pose.getRotation().div(2)
                         .plus(limelightDatas[1].MegaTag.pose.getRotation().div(2)) :
                     TunerConstants.DriveTrain.getState().Pose.getRotation()
@@ -315,13 +322,10 @@ public class VisionSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
-        // TODO BOT : Timing
-        long startTime = System.currentTimeMillis();
-
+        // This method variably gets data in between 4-10 ms.
         LimelightData[] limelightDatas = getLimelightData();
 
-        System.out.printf("Get data : %d ms%n", System.currentTimeMillis() - startTime);
-
+        // This loop generally updates data in 6 ms, but may double or triple for no apparent reason.
         for (LimelightData data : limelightDatas) {
             if (data.canTrustRotation()) {
                 // Only trust rotational data
@@ -339,13 +343,8 @@ public class VisionSubsystem extends SubsystemBase {
                 data.MegaTag2.timestampSeconds
             );
         }
-        
-        System.out.printf("Update position : %d ms%n", System.currentTimeMillis() - startTime);
 
-        long optiStartTime = System.currentTimeMillis();
+        // This method is suprprisingly efficient, generally below 1 ms.
         optimizeLimelights();
-        long finalTime = System.currentTimeMillis();
-        System.out.printf("Optimize LLs : %d ms%n", finalTime - optiStartTime);
-        System.out.printf("Final : %d ms%n", finalTime - startTime);
     }
 }
