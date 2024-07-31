@@ -7,14 +7,20 @@ package frc.robot.vision;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.HttpCamera;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.PhysicalConstants.LimelightConstants;
 import frc.robot.swerve.TunerConstants;
 
@@ -55,6 +61,60 @@ public class VisionSubsystem extends SubsystemBase {
     /** Creates a new VisionSubsystem. */
     private VisionSubsystem() {
         super("VisionSubsystem");
+
+        // Shuffleboard camera feeds.
+        HttpCamera frontLLCamera = new HttpCamera(
+            LimelightConstants.FRONT_APRIL_TAG_LL,
+            "http://" + LimelightConstants.FRONT_APRIL_TAG_LL + ".local:5800/stream.mjpg"
+        );
+        HttpCamera backLLCamera = new HttpCamera(
+            LimelightConstants.BACK_APRIL_TAG_LL,
+            "http://" + LimelightConstants.BACK_APRIL_TAG_LL + ".local:5800/stream.mjpg"
+        );
+        
+        CameraServer.addCamera(frontLLCamera);
+        CameraServer.addCamera(backLLCamera);
+
+        Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+            .add(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLCamera)
+            .withWidget(BuiltInWidgets.kCameraStream)
+            .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
+        Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+            .add(LimelightConstants.BACK_APRIL_TAG_LL, backLLCamera)
+            .withWidget(BuiltInWidgets.kCameraStream)
+            .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
+    }
+
+    // This method will be called once per scheduler run
+    @Override
+    public void periodic() {
+        // This method gets data in about 4 to 8 ms.
+        LimelightData[] filteredLimelightDatas = getFilteredLimelightData(false);
+
+        // This loop generally updates data in about 6 ms, but may double or triple for no apparent reason.
+        // This causes loop overrun warnings, however, it doesn't seem to be due to inefficient code and thus can be ignored.
+        for (LimelightData data : filteredLimelightDatas) {
+            if (data.canTrustRotation) {
+                // Only trust rotational data when adding this pose.
+                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(9999999, 9999999, 1));
+                TunerConstants.DriveTrain.addVisionMeasurement(
+                    data.MegaTag.pose,
+                    data.MegaTag.timestampSeconds
+                );
+            }
+
+            if (data.canTrustPosition) {
+                // Only trust positional data when adding this pose.
+                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(1, 1, 9999999));
+                TunerConstants.DriveTrain.addVisionMeasurement(
+                    data.MegaTag2.pose,
+                    data.MegaTag2.timestampSeconds
+                );
+            }
+        }
+
+        // This method is suprprisingly efficient, generally below 1 ms.
+        optimizeLimelights();
     }
 
     /**
@@ -366,37 +426,5 @@ public class VisionSubsystem extends SubsystemBase {
                     TunerConstants.DriveTrain.getState().Pose.getRotation()
             );
         }
-    }
-
-    // This method will be called once per scheduler run
-    @Override
-    public void periodic() {
-        // This method gets data in about 4 to 8 ms.
-        LimelightData[] filteredLimelightDatas = getFilteredLimelightData(false);
-
-        // This loop generally updates data in about 6 ms, but may double or triple for no apparent reason.
-        // This causes loop overrun warnings, however, it doesn't seem to be due to inefficient code and thus can be ignored.
-        for (LimelightData data : filteredLimelightDatas) {
-            if (data.canTrustRotation) {
-                // Only trust rotational data when adding this pose.
-                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(9999999, 9999999, 1));
-                TunerConstants.DriveTrain.addVisionMeasurement(
-                    data.MegaTag.pose,
-                    data.MegaTag.timestampSeconds
-                );
-            }
-
-            if (data.canTrustPosition) {
-                // Only trust positional data when adding this pose.
-                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(1, 1, 9999999));
-                TunerConstants.DriveTrain.addVisionMeasurement(
-                    data.MegaTag2.pose,
-                    data.MegaTag2.timestampSeconds
-                );
-            }
-        }
-
-        // This method is suprprisingly efficient, generally below 1 ms.
-        optimizeLimelights();
     }
 }
