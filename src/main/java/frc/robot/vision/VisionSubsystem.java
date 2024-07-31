@@ -71,9 +71,6 @@ public class VisionSubsystem extends SubsystemBase {
             LimelightConstants.BACK_APRIL_TAG_LL,
             "http://" + LimelightConstants.BACK_APRIL_TAG_LL + ".local:5800/stream.mjpg"
         );
-        
-        CameraServer.addCamera(frontLLCamera);
-        CameraServer.addCamera(backLLCamera);
 
         Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
             .add(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLCamera)
@@ -196,13 +193,13 @@ public class VisionSubsystem extends SubsystemBase {
         // Returns the data with the greater tag count.
         // Will only return the data if it has the same heartbeat as just captured (if it doesn't,
         // this means the data was retrieved from this.limelightDatas and not during this loop).
-        if (((useStored && frontLLDataMT2 != null) || this.lastHeartbeatFrontLL == heartbeatFrontLL)
+        if ((frontLLDataMT2 != null && (useStored || this.lastHeartbeatFrontLL == heartbeatFrontLL))
             && (backLLDataMT2 == null
                 || backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
                 || frontLLDataMT2.tagCount > backLLDataMT2.tagCount)) {
                 return new LimelightData[]{ this.limelightDatas[0] };
         }
-        else if (((useStored && backLLDataMT2 != null) || this.lastHeartbeatBackLL == heartbeatBackLL)
+        else if ((backLLDataMT2 != null && (useStored || this.lastHeartbeatBackLL == heartbeatBackLL))
             && (frontLLDataMT2 == null
                 || frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
                 || backLLDataMT2.tagCount > frontLLDataMT2.tagCount)) {
