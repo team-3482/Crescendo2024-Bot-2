@@ -13,6 +13,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.PhysicalConstants.LimelightConstants;
 import frc.robot.swerve.TunerConstants;
@@ -58,79 +59,103 @@ public class VisionSubsystem extends SubsystemBase {
 
     /**
      * Gets the most trustworthy data from each Limelight. Also updates {@link VisionSubsystem#limelightDatas} and heartbeats.
-     * @param ignoreHeartbeat - This will only ignore heartbeats for old data, meaning that this method is allowed to return stale/stored data.
-     * It will not ignore hearbeats when querying new data.
+     * @param useStored - When true, no data will be retrieved from the Limelights, stored data will be filtered instead.
      * @return LimelightData for each trustworthy Limelight data.
      * @apiNote Will theoretically stop updating data if the heartbeat resets.
      * However, this happens at 2e9 frames, which would take consecutive 96 days at a consistent 240 fps.
      */
-    private LimelightData[] getFilteredLimelightData(boolean ignoreHeartbeat) {
-        double rotationDegrees = TunerConstants.DriveTrain.getState().Pose.getRotation().getDegrees();
-        LimelightHelpers.SetRobotOrientation(LimelightConstants.FRONT_APRIL_TAG_LL, rotationDegrees, 0, 0, 0, 0, 0);
-        LimelightHelpers.SetRobotOrientation(LimelightConstants.BACK_APRIL_TAG_LL, rotationDegrees, 0, 0, 0, 0, 0);
-        
+    private LimelightData[] getFilteredLimelightData(boolean useStored) {
         LimelightHelpers.PoseEstimate frontLLDataMT2 = null;
         LimelightHelpers.PoseEstimate backLLDataMT2 = null;
-        long heartbeatStheno = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.FRONT_APRIL_TAG_LL, "hb").getInteger(-1);
-        long heartbeatEuryale = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.BACK_APRIL_TAG_LL, "hb").getInteger(-1);
+        long heartbeatFrontLL = -1;
+        long heartbeatBackLL = -1;
 
-        if (heartbeatStheno == -1 || this.lastHeartbeatFrontLL < heartbeatStheno) {
-            frontLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.FRONT_APRIL_TAG_LL);
-            LimelightHelpers.PoseEstimate frontLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.FRONT_APRIL_TAG_LL);
-            this.limelightDatas[0] = new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2);
-            this.lastHeartbeatFrontLL = heartbeatStheno == -1 ? this.lastHeartbeatFrontLL : heartbeatStheno;
-        }
+        // Periodic logic
+        if (!useStored) {
+            double rotationDegrees = TunerConstants.DriveTrain.getState().Pose.getRotation().getDegrees();
+            LimelightHelpers.SetRobotOrientation(LimelightConstants.FRONT_APRIL_TAG_LL,
+                rotationDegrees, 0, 0, 0, 0, 0
+            );
+            LimelightHelpers.SetRobotOrientation(LimelightConstants.BACK_APRIL_TAG_LL,
+                rotationDegrees, 0, 0, 0, 0, 0
+            );
+            
+            heartbeatFrontLL = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.FRONT_APRIL_TAG_LL, "hb").getInteger(-1);
+            heartbeatBackLL = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.BACK_APRIL_TAG_LL, "hb").getInteger(-1);
 
-        if (heartbeatEuryale == -1 || this.lastHeartbeatBackLL < heartbeatEuryale) {
-            backLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.BACK_APRIL_TAG_LL);
-            LimelightHelpers.PoseEstimate backLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.BACK_APRIL_TAG_LL);
-            this.limelightDatas[1] = new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2);
-            this.lastHeartbeatBackLL = heartbeatEuryale == -1 ? this.lastHeartbeatBackLL : heartbeatEuryale;
-        }
+            if (heartbeatFrontLL == -1 || this.lastHeartbeatFrontLL < heartbeatFrontLL) {
+                frontLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.FRONT_APRIL_TAG_LL);
+                LimelightHelpers.PoseEstimate frontLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.FRONT_APRIL_TAG_LL);
+                this.limelightDatas[0] = new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2);
+                this.lastHeartbeatFrontLL = heartbeatFrontLL == -1 ? this.lastHeartbeatFrontLL : heartbeatFrontLL;
+            }
+            
+            if (heartbeatBackLL == -1 || this.lastHeartbeatBackLL < heartbeatBackLL) {
+                backLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.BACK_APRIL_TAG_LL);
+                LimelightHelpers.PoseEstimate backLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.BACK_APRIL_TAG_LL);
+                this.limelightDatas[1] = new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2);
+                this.lastHeartbeatBackLL = heartbeatBackLL == -1 ? this.lastHeartbeatBackLL : heartbeatBackLL;
+            }
 
-        ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
-        double velocity = Math.sqrt(Math.pow(robotChassisSpeeds.vxMetersPerSecond, 2) + Math.pow(robotChassisSpeeds.vyMetersPerSecond, 2));
-        // If the bot's angular velocity is greater than 270 deg/s, translational velocity is over 2 m/s,
-        // or for both LLs the data is outdated or has no data, ignore vision updates.
-        if (Math.abs(Units.radiansToDegrees(robotChassisSpeeds.omegaRadiansPerSecond)) > 270
-            || Math.abs(velocity) > 2 // m/s
-            || (this.lastHeartbeatBackLL != heartbeatEuryale && this.lastHeartbeatFrontLL != heartbeatStheno)
-            || ((frontLLDataMT2 == null || frontLLDataMT2.tagCount == 0)
-                && (backLLDataMT2 == null || backLLDataMT2.tagCount == 0))
-            || (frontLLDataMT2 != null && frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
-                && backLLDataMT2 != null && backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE)) {
-            return new LimelightData[0];
+            ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
+            double velocity = Math.sqrt(Math.pow(robotChassisSpeeds.vxMetersPerSecond, 2) + Math.pow(robotChassisSpeeds.vyMetersPerSecond, 2));
+            // If the bot's angular velocity is greater than 270 deg/s, translational velocity is over 2 m/s,
+            // or for both LLs the data is outdated or has no data, ignore vision updates.
+            if (Math.abs(Units.radiansToDegrees(robotChassisSpeeds.omegaRadiansPerSecond)) > 270
+                || Math.abs(velocity) > 2 // m/s
+                || (this.lastHeartbeatBackLL != heartbeatBackLL && this.lastHeartbeatFrontLL != heartbeatFrontLL)
+                || ((frontLLDataMT2 != null && frontLLDataMT2.tagCount == 0) && (backLLDataMT2 != null && backLLDataMT2.tagCount == 0))
+                || (frontLLDataMT2 != null && frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
+                    && backLLDataMT2 != null && backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE)) {
+                return new LimelightData[0];
+            }
         }
 
         // Allows LLs to compare data even if they have unsynced FPS / heartbeats.
+        // Upon startup, these may still be null, so it is important to check for them or robot code could crash.
+        // Also, ignore data that is older than 1 second.
+        double timestampNow = Timer.getFPGATimestamp();
         if (frontLLDataMT2 == null) {
             frontLLDataMT2 = this.limelightDatas[0].MegaTag2;
+            
+            if (frontLLDataMT2 != null && Math.abs(frontLLDataMT2.timestampSeconds - timestampNow) > 1) {
+                frontLLDataMT2 = null;
+            }
         }
         if (backLLDataMT2 == null) {
             backLLDataMT2 = this.limelightDatas[1].MegaTag2;
+            
+            if (backLLDataMT2 != null && Math.abs(backLLDataMT2.timestampSeconds - timestampNow) > 1) {
+                backLLDataMT2 = null;
+            }
+        }
+        if (frontLLDataMT2 == null && backLLDataMT2 == null) {
+            return new LimelightData[0];
         }
 
         // Returns the data with the greater tag count.
         // Will only return the data if it has the same heartbeat as just captured (if it doesn't,
         // this means the data was retrieved from this.limelightDatas and not during this loop).
-        if ((!ignoreHeartbeat && this.lastHeartbeatFrontLL == heartbeatStheno)
-            && (backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
+        if (((useStored && frontLLDataMT2 != null) || this.lastHeartbeatFrontLL == heartbeatFrontLL)
+            && (backLLDataMT2 == null
+                || backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
                 || frontLLDataMT2.tagCount > backLLDataMT2.tagCount)) {
                 return new LimelightData[]{ this.limelightDatas[0] };
         }
-        else if ((!ignoreHeartbeat && this.lastHeartbeatBackLL == heartbeatEuryale)
-            && (frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
+        else if (((useStored && backLLDataMT2 != null) || this.lastHeartbeatBackLL == heartbeatBackLL)
+            && (frontLLDataMT2 == null
+                || frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
                 || backLLDataMT2.tagCount > frontLLDataMT2.tagCount)) {
                 return new LimelightData[]{ this.limelightDatas[1] };
         }
 
         // Returns the data that's closer to its respective camera than 90% of the other's distance.
         // 90% is a heuteristic.
-        if ((!ignoreHeartbeat && this.lastHeartbeatFrontLL == heartbeatStheno)
+        if ((!useStored && this.lastHeartbeatFrontLL == heartbeatFrontLL)
             && frontLLDataMT2.avgTagDist < backLLDataMT2.avgTagDist * 0.9) {
             return new LimelightData[]{ this.limelightDatas[0] };
         }
-        else if ((!ignoreHeartbeat && this.lastHeartbeatBackLL == heartbeatEuryale)
+        else if ((!useStored && this.lastHeartbeatBackLL == heartbeatBackLL)
             && backLLDataMT2.avgTagDist < frontLLDataMT2.avgTagDist * 0.9) {
             return new LimelightData[]{ this.limelightDatas[1] };
         }
@@ -146,11 +171,11 @@ public class VisionSubsystem extends SubsystemBase {
     private void optimizeLimelights() {
         byte index = 0; // Used only for setting the optimized flag, so that this can be a for-each loop.
         for (LimelightData limelightData : this.limelightDatas) {
-            if (!limelightData.optimized) {
-                this.limelightDatas[index++].optimized = true;
+            if (limelightData == null || limelightData.optimized) {
+                return;
             }
             else {
-                return;
+                this.limelightDatas[index++].optimized = true;
             }
             
             // Avoid unnecessary optimization for a LL with no tags and
@@ -160,6 +185,17 @@ public class VisionSubsystem extends SubsystemBase {
                 LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, LimelightConstants.ALL_TAG_IDS);
                 LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
                 continue;
+            }
+
+            // Downscaling closer to tags.
+            if (limelightData.MegaTag2.avgTagDist < 1.5) {
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 3);
+            }
+            else if (limelightData.MegaTag2.avgTagDist < 2) {
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 2);
+            }
+            else {
+                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 1.5f);
             }
 
             // Tag filtering for nearby tags.
@@ -188,17 +224,6 @@ public class VisionSubsystem extends SubsystemBase {
             }
             int[] nearbyTagsArray = nearbyTagsSet.stream().mapToInt(i -> i).toArray();
             LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, nearbyTagsArray);
-
-            // Downscaling closer to tags.
-            if (limelightData.MegaTag2.avgTagDist < 1.75) {
-                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 3);
-            }
-            else if (limelightData.MegaTag2.avgTagDist < 2.5) {
-                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 2);
-            }
-            else {
-                LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 1.5f);
-            }
             
             // Smart cropping around on-screen AprilTags and potential nearby ones.
             // For explanations of variables such as tx vs txnc, see :
@@ -312,18 +337,26 @@ public class VisionSubsystem extends SubsystemBase {
             return new Pose2d();
         }
         else if (filteredLimelightDatas.length == 1) {
+            if (filteredLimelightDatas[0].MegaTag2.tagCount == 0) {
+                return new Pose2d();
+            }
+
             return new Pose2d(
                 filteredLimelightDatas[0].MegaTag2.pose.getTranslation(),
-                filteredLimelightDatas[0].canTrustRotation() ?
+                filteredLimelightDatas[0].canTrustRotation ?
                     filteredLimelightDatas[0].MegaTag.pose.getRotation() : TunerConstants.DriveTrain.getState().Pose.getRotation()
             );
         }
         else {
+            if (filteredLimelightDatas[0].MegaTag2.tagCount == 0 || filteredLimelightDatas[1].MegaTag2.tagCount == 0) {
+                return new Pose2d();
+            }
+
             // Average them for best accuracy
             return new Pose2d(
                 // (First translation + Second translation) / 2
                 filteredLimelightDatas[0].MegaTag2.pose.getTranslation().plus(filteredLimelightDatas[1].MegaTag2.pose.getTranslation()).div(2),
-                filteredLimelightDatas[0].canTrustRotation() ?
+                filteredLimelightDatas[0].canTrustRotation ?
                     // First rotation / 2 + Second rotation / 2
                     //
                     // This is done to avoid problems due to Rotation2d being [0, 360) 
@@ -344,21 +377,23 @@ public class VisionSubsystem extends SubsystemBase {
         // This loop generally updates data in about 6 ms, but may double or triple for no apparent reason.
         // This causes loop overrun warnings, however, it doesn't seem to be due to inefficient code and thus can be ignored.
         for (LimelightData data : filteredLimelightDatas) {
-            if (data.canTrustRotation()) {
+            if (data.canTrustRotation) {
                 // Only trust rotational data when adding this pose.
-                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(9999999, 9999999, 0.5));
+                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(9999999, 9999999, 1));
                 TunerConstants.DriveTrain.addVisionMeasurement(
                     data.MegaTag.pose,
                     data.MegaTag.timestampSeconds
                 );
             }
 
-            // Only trust positional data when adding this pose.
-            TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(0.7, 0.7, 9999999));
-            TunerConstants.DriveTrain.addVisionMeasurement(
-                data.MegaTag2.pose,
-                data.MegaTag2.timestampSeconds
-            );
+            if (data.canTrustPosition) {
+                // Only trust positional data when adding this pose.
+                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(1, 1, 9999999));
+                TunerConstants.DriveTrain.addVisionMeasurement(
+                    data.MegaTag2.pose,
+                    data.MegaTag2.timestampSeconds
+                );
+            }
         }
 
         // This method is suprprisingly efficient, generally below 1 ms.

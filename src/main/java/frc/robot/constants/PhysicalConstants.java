@@ -22,7 +22,7 @@ public final class PhysicalConstants {
         /** Spams "Bad LL 2D/3D Pose Data" when no data is coming from the NetworkTableInstance for a LL. */
         public static final boolean SPAM_BAD_DATA = true;
         /** The distance within which to use Limelight data in meters. This is measured from tag to camera.*/
-        public static final int TRUST_TAG_DISTANCE = 12;
+        public static final int TRUST_TAG_DISTANCE = 4;
 
         /** Front left Limelight (April Tags). */
         public static final String FRONT_APRIL_TAG_LL = "limelight-stheno";

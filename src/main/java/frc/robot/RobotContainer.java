@@ -9,7 +9,9 @@ import java.util.Map;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.PathPlannerAuto;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
@@ -128,10 +130,12 @@ public class RobotContainer {
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
         // Double Rectangle
-        driverController.back().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative(
-            // VisionSubsystem.getInstance().getEstimatedPose()
-            Positions.getStartingPose(PositionInitialization.MIDDLE)
-        )));
+        driverController.back().onTrue(drivetrain.runOnce(() -> {
+            Pose2d estimatedPose = VisionSubsystem.getInstance().getEstimatedPose();
+            if (!estimatedPose.equals(new Pose2d())) {
+                drivetrain.seedFieldRelative(estimatedPose);
+            }
+        }));
 
         // This looks terrible, but I can't think of a better way to do it </3
         if (ControllerConstants.DPAD_DRIVE_INPUT) {
@@ -213,6 +217,7 @@ public class RobotContainer {
      * @return The command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return autoChooser.getSelected();
+        return new PathPlannerAuto("Test1");
+        // return autoChooser.getSelected();
     }
 }
