@@ -4,9 +4,11 @@
 
 package frc.robot;
 
+import edu.wpi.first.net.PortForwarder;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.constants.PhysicalConstants.LimelightConstants;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -27,10 +29,11 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         // Port forward all required LL ports. Necessary for robot connections over ethernet.
-        // for (int port = 5800; port <= 5807; port++) {
-        //     PortForwarder.add(port, LimelightConstants.INTAKE_LLIGHT + ".local", port);
-        //     PortForwarder.add(port + 10, LimelightConstants.SHOOTER_LLIGHT + ".local", port);
-        // }
+        for (int port = 5800; port <= 5809; port++) {
+            PortForwarder.add(port, LimelightConstants.FRONT_APRIL_TAG_LL + ".local", port);
+            PortForwarder.add(port + 10, LimelightConstants.NOTE_DETECTION_LL + ".local", port);
+            PortForwarder.add(port + 20, LimelightConstants.BACK_APRIL_TAG_LL + ".local", port);
+        }
 
         // Initialize RobotContainer and all subsystems
         RobotContainer.getInstance();
@@ -73,7 +76,7 @@ public class Robot extends TimedRobot {
             }
         }
         else {
-            System.err.println("No auton command found");
+            System.err.println("No auton command found.");
         }
     }
 
