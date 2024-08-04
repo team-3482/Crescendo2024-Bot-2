@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.HttpCamera;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -22,8 +21,14 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.PhysicalConstants.LimelightConstants;
+import frc.robot.constants.PhysicalConstants.LimelightConstants.VisionConstants;
 import frc.robot.swerve.TunerConstants;
 
+/** 
+ * A class that manages AprilTag Limelights for vision.
+ * <p>Optimizes detection for better performance and pushes
+ * position updates to the internal odometer.
+ */
 public class VisionSubsystem extends SubsystemBase {
     // Thread-safe singleton design pattern.
     private static volatile VisionSubsystem instance;
@@ -162,8 +167,8 @@ public class VisionSubsystem extends SubsystemBase {
                 || Math.abs(velocity) > 2 // m/s
                 || (this.lastHeartbeatBackLL != heartbeatBackLL && this.lastHeartbeatFrontLL != heartbeatFrontLL)
                 || ((frontLLDataMT2 != null && frontLLDataMT2.tagCount == 0) && (backLLDataMT2 != null && backLLDataMT2.tagCount == 0))
-                || (frontLLDataMT2 != null && frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
-                    && backLLDataMT2 != null && backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE)) {
+                || (frontLLDataMT2 != null && frontLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE
+                    && backLLDataMT2 != null && backLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE)) {
                 return new LimelightData[0];
             }
         }
@@ -195,19 +200,19 @@ public class VisionSubsystem extends SubsystemBase {
         // this means the data was retrieved from this.limelightDatas and not during this loop).
         if ((frontLLDataMT2 != null && (useStored || this.lastHeartbeatFrontLL == heartbeatFrontLL))
             && (backLLDataMT2 == null
-                || backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
+                || backLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE
                 || frontLLDataMT2.tagCount > backLLDataMT2.tagCount)) {
                 return new LimelightData[]{ this.limelightDatas[0] };
         }
         else if ((backLLDataMT2 != null && (useStored || this.lastHeartbeatBackLL == heartbeatBackLL))
             && (frontLLDataMT2 == null
-                || frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
+                || frontLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE
                 || backLLDataMT2.tagCount > frontLLDataMT2.tagCount)) {
                 return new LimelightData[]{ this.limelightDatas[1] };
         }
 
         // Returns the data that's closer to its respective camera than 90% of the other's distance.
-        // 90% is a heuteristic.
+        // 90% is a heuristic.
         if ((!useStored && this.lastHeartbeatFrontLL == heartbeatFrontLL)
             && frontLLDataMT2.avgTagDist < backLLDataMT2.avgTagDist * 0.9) {
             return new LimelightData[]{ this.limelightDatas[0] };
@@ -239,8 +244,14 @@ public class VisionSubsystem extends SubsystemBase {
             // reset any optimization that might have been done previously.
             if (limelightData.MegaTag2 == null || limelightData.MegaTag2.tagCount == 0) {
                 LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 1.5f);
-                LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, LimelightConstants.ALL_TAG_IDS);
-                LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
+                LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, VisionConstants.ALL_TAG_IDS);
+                LimelightHelpers.setCropWindow(
+                    limelightData.name,
+                    -VisionConstants.DEFAULT_CROP_SIZE,
+                    VisionConstants.DEFAULT_CROP_SIZE,
+                    -VisionConstants.DEFAULT_CROP_SIZE,
+                    VisionConstants.DEFAULT_CROP_SIZE
+                );
                 continue;
             }
 
@@ -286,7 +297,13 @@ public class VisionSubsystem extends SubsystemBase {
             // For explanations of variables such as tx vs txnc, see :
             // https://docs.limelightvision.io/docs/docs-limelight/apis/complete-networktables-api#basic-targeting-data.
             if (limelightData.MegaTag2.rawFiducials.length == 0) {
-                LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
+                LimelightHelpers.setCropWindow(
+                    limelightData.name,
+                    -VisionConstants.DEFAULT_CROP_SIZE,
+                    VisionConstants.DEFAULT_CROP_SIZE,
+                    -VisionConstants.DEFAULT_CROP_SIZE,
+                    VisionConstants.DEFAULT_CROP_SIZE
+                );
             }
             else {
                 LimelightHelpers.RawFiducial txncBig = null;
@@ -299,7 +316,7 @@ public class VisionSubsystem extends SubsystemBase {
                 // (for largest bounding box that will include all targets on screen).
                 for (LimelightHelpers.RawFiducial fiducial: limelightData.MegaTag2.rawFiducials) {
                     // This formula is explained below.
-                    sideLength = Math.sqrt(fiducial.ta * LimelightConstants.FOV_AREA) / 2;
+                    sideLength = Math.sqrt(fiducial.ta * VisionConstants.FOV_AREA) / 2;
                     
                     if (txncBig == null || fiducial.txnc + sideLength > txncBig.txnc) {
                         txncBig = fiducial;
@@ -322,11 +339,11 @@ public class VisionSubsystem extends SubsystemBase {
                 // (largest/smallest x and largest/smallest y).
                 //     MINUS for the smallest positions (left/bottom of the box) or PLUS for the largest positions (right/top of the box).
                 //         The length of the side of the targets — This is found in the following way :
-                //           We know the FOV area (LimelightConstants.FOV_AREA) -> We know percentage of screen target occupies (ta) ->
+                //           We know the FOV area (AprilTagLLConstants.FOV_AREA) -> We know percentage of screen target occupies (ta) ->
                 //           Targets are roughly squares at most angles so sqrt(target area in pixels) = side lengths.
                 //         Which is MULTIPLIED by a function that scales with distance (further away needs larger box due
                 //         to bot movements having more impact on target position from the camera's POV) in the following way :
-                //           ` 2 (heuteristic, this determines general box size) * ln(distance to target + 1) `
+                //           ` 2 (heuristic, this determines general box size) * ln(distance to target + 1) `
                 //           The +1 is added to the natural log to avoid a negative value for distances of less than 1 meter,
                 //           even if those are very rare. Natural log is probably not the best function for this, but it works well enough.
                 //
@@ -336,10 +353,10 @@ public class VisionSubsystem extends SubsystemBase {
                 // In the end this is DIVIDED by HALF of the rough width or height of the FOV,
                 // because Limelights expect cropping to be [-1.0, 1.0].
 
-                double xSmall = (txncSmall.txnc - Math.sqrt(txncSmall.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(txncSmall.distToCamera + 1)))
-                    / (LimelightConstants.FOV_X / 2);
-                double xBig = (txncBig.txnc + Math.sqrt(txncBig.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(txncBig.distToCamera + 1)))
-                    / (LimelightConstants.FOV_X / 2);
+                double xSmall = (txncSmall.txnc - Math.sqrt(txncSmall.ta * VisionConstants.FOV_AREA) * (2 * Math.log(txncSmall.distToCamera + 1)))
+                    / (VisionConstants.FOV_X / 2);
+                double xBig = (txncBig.txnc + Math.sqrt(txncBig.ta * VisionConstants.FOV_AREA) * (2 * Math.log(txncBig.distToCamera + 1)))
+                    / (VisionConstants.FOV_X / 2);
                 
                 LimelightHelpers.setCropWindow(
                     limelightData.name,
@@ -349,10 +366,10 @@ public class VisionSubsystem extends SubsystemBase {
                     //                           leftmost coordinate - 1.5 * (horizontal size of box) = a box 2.5x its original size
                     getNearbyTagDirection(txncSmall.id) < 0 ? xSmall - 1.5 * Math.abs(xBig - xSmall) : xSmall,
                     getNearbyTagDirection(txncBig.id) > 0 ? xBig + 1.5 * Math.abs(xBig - xSmall) : xBig,
-                    (tyncSmall.tync - Math.sqrt(tyncSmall.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(tyncBig.distToCamera + 1)))
-                        / (LimelightConstants.FOV_Y / 2),
-                    (tyncBig.tync + Math.sqrt(tyncBig.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(tyncSmall.distToCamera + 1)))
-                        / (LimelightConstants.FOV_Y / 2)
+                    (tyncSmall.tync - Math.sqrt(tyncSmall.ta * VisionConstants.FOV_AREA) * (2 * Math.log(tyncBig.distToCamera + 1)))
+                        / (VisionConstants.FOV_Y / 2),
+                    (tyncBig.tync + Math.sqrt(tyncBig.ta * VisionConstants.FOV_AREA) * (2 * Math.log(tyncSmall.distToCamera + 1)))
+                        / (VisionConstants.FOV_Y / 2)
                 );
             }
         }

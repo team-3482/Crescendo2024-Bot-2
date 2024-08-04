@@ -17,13 +17,11 @@ public final class PhysicalConstants {
         public static final String CTRE_CAN_BUS = "ctre";
     }
 
-    /** Constants for limelight-related data. */
+    /** Constants for Limelight-related data. */
     public static final class LimelightConstants {
         /** Spams "Bad LL 2D/3D Pose Data" when no data is coming from the NetworkTableInstance for a LL. */
         public static final boolean SPAM_BAD_DATA = true;
-        /** The distance within which to use Limelight data in meters. This is measured from tag to camera.*/
-        public static final int TRUST_TAG_DISTANCE = 4;
-
+        
         /** Front left Limelight (April Tags). */
         public static final String FRONT_APRIL_TAG_LL = "limelight-stheno";
         /** Front right Limelight (Note detection). */
@@ -31,15 +29,29 @@ public final class PhysicalConstants {
         /** Back Limelight (April Tags). */
         public static final String BACK_APRIL_TAG_LL = "limelight-euryale";
 
-        /** All valid tag IDs (used for tag filtering) */
-        public static final int[] ALL_TAG_IDS = new int[]{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
-        
-        // See https://docs.limelightvision.io/docs/docs-limelight/hardware-comparison.
-        /** Horizontal FOV of LL3G in degrees (used for smart cropping) */
-        public static final double FOV_X = 82;
-        /** Vertical FOV of LL3G in degrees (used for smart cropping) */
-        public static final double FOV_Y = 56.2;
-        /** FOV area of the LL3g in degrees squared (used for smart cropping) */
-        public static final double FOV_AREA = FOV_X * FOV_Y;
+        /** Constants used for AprilTag Limelights and vision algorithms. */
+        public static final class VisionConstants {
+            /** The distance within which to use Limelight data in meters. This is measured from tag to camera.*/
+            public static final int TRUST_TAG_DISTANCE = 4;
+
+            /** All valid tag IDs (used for tag filtering) */
+            public static final int[] ALL_TAG_IDS = new int[]{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+            
+            /** Crop window size when no tags are in view (used for smart cropping) */
+            public static final double DEFAULT_CROP_SIZE = 0.85;
+            
+            // See https://docs.limelightvision.io/docs/docs-limelight/hardware-comparison.
+            /** Horizontal FOV of LL3G in degrees (used for smart cropping) */
+            public static final double FOV_X = 82;
+            /** Vertical FOV of LL3G in degrees (used for smart cropping) */
+            public static final double FOV_Y = 56.2;
+            /** FOV area of the LL3g in degrees squared (used for smart cropping) */
+            public static final double FOV_AREA = FOV_X * FOV_Y;
+        }
+
+        /** Constants used for the note detection Limelight and detection algorithms. */
+        public static final class DetectionLLConstants {
+            
+        }
     }
 }
