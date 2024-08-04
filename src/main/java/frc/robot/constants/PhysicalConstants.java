@@ -4,6 +4,10 @@
 
 package frc.robot.constants;
 
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Translation3d;
+
 /**
  * Constants used throughout the code specifically related to subsystems or unchangeable aspects of the bot.
  * @implSpec BACK of the bot is 180 degrees / the battery, use that as a reference for directions.
@@ -50,8 +54,27 @@ public final class PhysicalConstants {
         }
 
         /** Constants used for the note detection Limelight and detection algorithms. */
-        public static final class DetectionLLConstants {
-            
+        public static final class DetectionConstants {
+            /**
+             * The real-life outer diameter of a note in meters.
+             * @see Page 34 of the 2024 game manual :
+             * https://firstfrc.blob.core.windows.net/frc2024/Manual/2024GameManual.pdf
+             */
+            public static double NOTE_DIAMETER = 0.36;
+            /** The real-life height of a note in meters.
+             * @see Page 34 of the 2024 game manual :
+             * https://firstfrc.blob.core.windows.net/frc2024/Manual/2024GameManual.pdf 
+             */
+            public static double NOTE_HEIGHT = 0.05;
+
+            /** The position of the Limelight relative to the center of the bot. */
+            public static Pose3d LIMELIGHT_POSITION = new Pose3d( // TODO BOT : Measure
+                new Translation3d(0, 0, 0),
+                new Rotation3d(0, 0, 0)
+            );
+
+            /** Heuristic conversion factor. */
+            public static double PIXEL_TO_RAD = 001; // TODO : Tune
         }
     }
 }
