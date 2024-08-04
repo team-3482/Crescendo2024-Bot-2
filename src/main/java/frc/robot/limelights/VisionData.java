@@ -1,16 +1,16 @@
-package frc.robot.vision;
+package frc.robot.limelights;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
-import frc.robot.constants.PhysicalConstants.LimelightConstants;
+import frc.robot.constants.PhysicalConstants.LimelightConstants.VisionConstants;
 import frc.robot.swerve.TunerConstants;
 
 /**
  * <p>A helper class used for storing MegaTag and MegaTag2 data from a Limelight
  * to avoid unnecessary calls to the NetworkTables API.
- * <p>MT rotation should not be combined with MT2 pose, because their timestamps may differ.
+ * @apiNote MT rotation should not be combined with MT2 pose, because their timestamps may differ.
  */
-public class LimelightData {
+public class VisionData {
     public final String name;
     public final LimelightHelpers.PoseEstimate MegaTag;
     public final LimelightHelpers.PoseEstimate MegaTag2;
@@ -25,12 +25,13 @@ public class LimelightData {
      * @param MegaTag data.
      * @param MegaTag2 data.
      */
-    public LimelightData(String name, LimelightHelpers.PoseEstimate MegaTag, LimelightHelpers.PoseEstimate MegaTag2) {
+    public VisionData(String name, LimelightHelpers.PoseEstimate MegaTag, LimelightHelpers.PoseEstimate MegaTag2) {
         this.name = name;
         this.MegaTag = MegaTag;
         this.MegaTag2 = MegaTag2;
         this.optimized = false;
 
+        // These are calculated when the measurement is created
         this.canTrustRotation = canTrustRotation();
         this.canTrustPosition = canTrustPosition();
     }
@@ -58,7 +59,7 @@ public class LimelightData {
      */
     private boolean canTrustPosition() {
         return this.MegaTag2 != null
-            && this.MegaTag2.avgTagDist < LimelightConstants.TRUST_TAG_DISTANCE
+            && this.MegaTag2.avgTagDist < VisionConstants.TRUST_TAG_DISTANCE
             && TunerConstants.DriveTrain.getState().Pose.getTranslation().getDistance(this.MegaTag2.pose.getTranslation()) <= 1.5;
     }
 }
