@@ -74,7 +74,7 @@ public final class PhysicalConstants {
             );
 
             /** Heuristic conversion factor. */
-            public static double PIXEL_TO_RAD = 001; // TODO : Tune
+            public static double PIXEL_TO_RAD = 485;
         }
     }
 }

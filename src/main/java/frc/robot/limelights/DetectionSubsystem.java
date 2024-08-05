@@ -4,6 +4,7 @@
 
 package frc.robot.limelights;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import edu.wpi.first.cscore.HttpCamera;
@@ -59,20 +60,36 @@ public class DetectionSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
-        // TODO BOT : Test distance from width
         /** Sidelength of longest side of the fitted bounding box (pixels) */
-        double tlong = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "tlong")
-            .getDouble(0);
-        if (tlong != 0) {
-            System.out.printf("tlong : %f px ; distance : %f m", tlong, getDistanceFromWidth(tlong));
+        double[] widths = getWidths();
+        for (double width : widths) {
+            System.out.printf(
+                "width : %f px ; distance : %f in%n",
+                width,
+                Units.metersToInches(getDistanceFromWidth(width))
+            );
         }
 
         // TODO BOT : Test distance from pitch
-        double ty = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "tync")
-            .getDouble(0);
-        if (ty != 0) {
-            System.out.printf("ty : %f deg ; distance : %f m", ty, getDistanceFromPitch(ty));
+        // double ty = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "tync")
+        //     .getDouble(0);
+    }
+
+    private double[] getWidths() {
+        double[] rawDetections = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections")
+            .getDoubleArray(new double[0]);
+        ArrayList<Double> widths = new ArrayList<Double>();
+        
+        for (int i = 4; i < rawDetections.length; i += 12) {
+            // Finds the difference between top right and top left corners (horizontal)
+            double top = rawDetections[i+2] - rawDetections[i];
+            // Finds the difference between bottom right and bottom left corners (horizontal)
+            double bottom = rawDetections[i+4] - rawDetections[i+6];
+            
+            widths.add((top + bottom) / 2);
         }
+
+        return widths.stream().mapToDouble(i -> i).toArray();
     }
 
     /**
