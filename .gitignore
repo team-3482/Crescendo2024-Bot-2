@@ -178,7 +178,7 @@ logs/
 ctre_sim/
 
 # build constants, see build.gradle
-src/main/java/frc/robot/BuildConstants.java
+src/main/java/frc/robot/utilities/BuildConstants.java
 
 networktables.json
 
