@@ -62,19 +62,22 @@ public class DetectionSubsystem extends SubsystemBase {
     public void periodic() {
         /** Sidelength of longest side of the fitted bounding box (pixels) */
         double[] widths = getWidths();
-        for (double width : widths) {
+        double[] tys = getTYs();
+
+        // TODO : Measure
+        for (int i = 0; i < widths.length || i < tys.length; i++) {
             System.out.printf(
-                "width : %f px ; distance : %f in%n",
-                width,
-                Units.metersToInches(getDistanceFromWidth(width))
+                "width : %f in ; pitch : %f in%n",
+                i < widths.length ? Units.metersToInches(getDistanceFromWidth(widths[i])) : -1,
+                i < tys.length ? Units.metersToInches(getDistanceFromPitch(tys[i])) : -1
             );
         }
-
-        // TODO BOT : Test distance from pitch
-        // double ty = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "tync")
-        //     .getDouble(0);
     }
-
+    
+    /**
+     * Helper that calculates widths from corner points of all on-screen targets.
+     * @return The width of each target in pixels.
+     */
     private double[] getWidths() {
         double[] rawDetections = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections")
             .getDoubleArray(new double[0]);
@@ -90,6 +93,22 @@ public class DetectionSubsystem extends SubsystemBase {
         }
 
         return widths.stream().mapToDouble(i -> i).toArray();
+    }
+
+    /**
+     * Helper that gets the ty for every on-screen target.
+     * @return The ty of each target in degrees.
+     */
+    private double[] getTYs() {
+        double[] rawDetections = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections")
+            .getDoubleArray(new double[0]);
+        ArrayList<Double> tys = new ArrayList<Double>();
+
+        for (int i = 2; i < rawDetections.length; i += 12) {
+            tys.add(rawDetections[i]);
+        }
+
+        return tys.stream().mapToDouble(i -> i).toArray();
     }
 
     /**
@@ -114,10 +133,10 @@ public class DetectionSubsystem extends SubsystemBase {
      */
     private double getDistanceFromPitch(double ty) {
         double pitch = DetectionConstants.LIMELIGHT_POSITION.getRotation().getY();
-        double theta = pitch + Units.degreesToRadians(ty);
+        double theta = Math.abs(pitch + Units.degreesToRadians(ty));
         double limelightHeight = DetectionConstants.LIMELIGHT_POSITION.getZ();
         
-        double distance = (limelightHeight - DetectionConstants.NOTE_HEIGHT) * Math.tan(theta);
+        double distance = (limelightHeight - DetectionConstants.NOTE_HEIGHT) / Math.tan(theta);
         return distance;
     }
 

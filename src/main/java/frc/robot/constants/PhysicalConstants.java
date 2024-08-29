@@ -7,6 +7,7 @@ package frc.robot.constants;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.util.Units;
 
 /**
  * Constants used throughout the code specifically related to subsystems or unchangeable aspects of the bot.
@@ -68,13 +69,17 @@ public final class PhysicalConstants {
             public static double NOTE_HEIGHT = 0.05;
 
             /** The position of the Limelight relative to the center of the bot. */
-            public static Pose3d LIMELIGHT_POSITION = new Pose3d( // TODO BOT : Measure
-                new Translation3d(0, 0, 0),
-                new Rotation3d(0, 0, 0)
+            public static Pose3d LIMELIGHT_POSITION = new Pose3d(
+                new Translation3d(0.3, 0.23, 0.27), // TODO : Re-measure
+                new Rotation3d(
+                    0,
+                    Units.degreesToRadians(-20),
+                    Units.degreesToRadians(-20)
+                )
             );
 
-            /** Heuristic conversion factor. */
-            public static double PIXEL_TO_RAD = 485;
+            /** Heuristic conversion factor. Works with Limelight Resolution 1280x960 */
+            public static double PIXEL_TO_RAD = 1150; // TODO : Re-measure
         }
     }
 }
