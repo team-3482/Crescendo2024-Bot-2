@@ -63,13 +63,14 @@ public class DetectionSubsystem extends SubsystemBase {
         /** Sidelength of longest side of the fitted bounding box (pixels) */
         double[] widths = getWidths();
         double[] tys = getTYs();
+        double[] txs = getTXs();
 
         // TODO : Measure
         for (int i = 0; i < widths.length || i < tys.length; i++) {
             System.out.printf(
-                "width : %f in ; pitch : %f in%n",
-                i < widths.length ? Units.metersToInches(getDistanceFromWidth(widths[i])) : -1,
-                i < tys.length ? Units.metersToInches(getDistanceFromPitch(tys[i])) : -1
+                "width : %s in ; pitch : %s in%n",
+                i < widths.length ? getNotePose(Units.metersToInches(getDistanceFromWidth(widths[i])), txs[i]).getTranslation().toString() : -1,
+                i < tys.length ? getNotePose(Units.metersToInches(getDistanceFromPitch(tys[i])), txs[i]).getTranslation().toString() : -1
             );
         }
     }
@@ -112,6 +113,22 @@ public class DetectionSubsystem extends SubsystemBase {
     }
 
     /**
+     * Helper that gets the tx for every on-screen target.
+     * @return The tx of each target in degrees.
+     */
+    private double[] getTXs() {
+        double[] rawDetections = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections")
+            .getDoubleArray(new double[0]);
+        ArrayList<Double> txs = new ArrayList<Double>();
+
+        for (int i = 1; i < rawDetections.length; i += 12) {
+            txs.add(rawDetections[i]);
+        }
+
+        return txs.stream().mapToDouble(i -> i).toArray();
+    }
+
+    /**
      * Calculates the distance of a note using its width.
      * This is more trustworthy than the height, because the width varies more.
      * @param noteWidth - The width of the note in pixels.
@@ -122,7 +139,7 @@ public class DetectionSubsystem extends SubsystemBase {
         double theta = noteWidth / DetectionConstants.PIXEL_TO_RAD;
         
         double distance = DetectionConstants.NOTE_DIAMETER / Math.tan(theta);
-        return distance;
+        return distance + DetectionConstants.DISTANCE_TO_CENTER_OF_NOTE;
     }
 
     /**
@@ -137,7 +154,7 @@ public class DetectionSubsystem extends SubsystemBase {
         double limelightHeight = DetectionConstants.LIMELIGHT_POSITION.getZ();
         
         double distance = (limelightHeight - DetectionConstants.NOTE_HEIGHT) / Math.tan(theta);
-        return distance;
+        return distance + DetectionConstants.DISTANCE_TO_CENTER_OF_NOTE;
     }
 
     /**
