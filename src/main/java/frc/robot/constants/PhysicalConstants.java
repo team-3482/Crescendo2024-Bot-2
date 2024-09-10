@@ -30,7 +30,7 @@ public final class PhysicalConstants {
         /** Front left Limelight (April Tags). */
         public static final String FRONT_APRIL_TAG_LL = "limelight-stheno";
         /** Front right Limelight (Note detection). */
-        public static final String NOTE_DETECTION_LL = "limelight-medusa"; // TODO : configure detection limelight
+        public static final String NOTE_DETECTION_LL = "limelight-medusa";
         /** Back Limelight (April Tags). */
         public static final String BACK_APRIL_TAG_LL = "limelight-euryale";
 
@@ -70,7 +70,7 @@ public final class PhysicalConstants {
 
             /** The position of the Limelight relative to the center of the bot. */
             public static Pose3d LIMELIGHT_POSITION = new Pose3d(
-                new Translation3d(0.34, 0.25, 0.27), // TODO : Re-measure
+                new Translation3d(0.34, 0.25, 0.27),
                 new Rotation3d(
                     0,
                     Units.degreesToRadians(-20),
@@ -79,7 +79,7 @@ public final class PhysicalConstants {
             );
 
             /** Heuristic conversion factor. Works with Limelight Resolution 1280x960 */
-            public static double PIXEL_TO_RAD = 900; // TODO : Re-measure
+            public static double PIXEL_TO_RAD = 900;
 
             /** Guestimate for increased accuracy, added to calculated note distances. */
             public static double DISTANCE_TO_CENTER_OF_NOTE = Units.inchesToMeters(7);

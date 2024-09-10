@@ -10,7 +10,6 @@ import java.util.Map;
 import edu.wpi.first.cscore.HttpCamera;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
@@ -60,12 +59,11 @@ public class DetectionSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
-        /** Sidelength of longest side of the fitted bounding box (pixels) */
+        // TODO : DetectionData.java
         double[] widths = getWidths();
         double[] tys = getTYs();
         double[] txs = getTXs();
 
-        // TODO : Measure
         for (int i = 0; i < widths.length || i < tys.length; i++) {
             System.out.printf(
                 "width : %s in ; pitch : %s in%n",
@@ -165,32 +163,37 @@ public class DetectionSubsystem extends SubsystemBase {
      * @apiNote The rotation is 0 because notes are circular.
      */
     private Pose2d getNotePose(double distance, double tx) {
-        // TODO BOT : Shuffleboard step-by-step updates of each position to verify math
-
-        double yaw = DetectionConstants.LIMELIGHT_POSITION.getRotation().getZ();
+        double yaw = -DetectionConstants.LIMELIGHT_POSITION.getRotation().getZ();
         double theta = yaw + Units.degreesToRadians(tx);
         
         Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
-        Transform2d cameraTransform = new Transform2d(
-            DetectionConstants.LIMELIGHT_POSITION.getTranslation().toTranslation2d(),
-            DetectionConstants.LIMELIGHT_POSITION.getRotation().toRotation2d()
+
+        Translation2d cameraToNote = new Translation2d(
+            distance * Math.cos(theta),
+            distance * Math.sin(theta)
         );
 
-        Pose2d cameraPose = botPose.transformBy(cameraTransform);
+        Translation2d botToNote = new Translation2d(
+            cameraToNote.getX() + DetectionConstants.LIMELIGHT_POSITION.getX(),
+            cameraToNote.getY() - DetectionConstants.LIMELIGHT_POSITION.getY()
+        );
 
-        double forward = Math.cos(theta) * distance;
-        double sideways = Math.sin(theta) * distance;
+        double theta2 = Math.atan(botToNote.getY() / botToNote.getX()) + botPose.getRotation().getRadians();
+        double dBotToNote = Math.sqrt(Math.pow(botToNote.getY(), 2) + Math.pow(botToNote.getX(), 2));
 
-        Transform2d noteTransform = new Transform2d(
-            new Translation2d(forward, sideways),
+        Translation2d botToNoteFieldSpace = new Translation2d(
+            dBotToNote * Math.cos(theta2),
+            dBotToNote * Math.sin(theta2)
+        );
+
+        Pose2d notePose = new Pose2d(
+            new Translation2d(
+                botPose.getX() + botToNoteFieldSpace.getX(), 
+                botPose.getY() + botToNoteFieldSpace.getY() 
+            ),
             new Rotation2d()
         );
 
-        Pose2d notePose = cameraPose.transformBy(noteTransform);
-
-        return new Pose2d(
-            notePose.getTranslation(),
-            new Rotation2d()
-        );
+        return notePose;
     }
 }
