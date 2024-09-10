@@ -141,19 +141,28 @@ public class DetectionSubsystem extends SubsystemBase {
      */
     private Pose2d getNotePose(double distance, double tx) {
         double yaw = -DetectionConstants.LIMELIGHT_POSITION.getRotation().getZ();
-        // TODO : Check if \/ Should be negative
-        double theta = yaw - Units.degreesToRadians(tx);
-        
+        // TODO : Check if \/ Should be positive
+        double theta = yaw + Units.degreesToRadians(tx);
+        boolean over90Deg = false;
+
+        if (Units.radiansToDegrees(theta) > 90) {
+            theta = Math.PI - theta;
+            over90Deg = true;
+        }
+
         Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
 
         Translation2d cameraToNote = new Translation2d(
-            distance * Math.cos(theta),
-            distance * Math.sin(theta)
+            distance * Math.sin(theta),
+            distance * Math.cos(theta)
         );
 
+
         Translation2d botToNote = new Translation2d(
-            cameraToNote.getX() + DetectionConstants.LIMELIGHT_POSITION.getX(),
-            cameraToNote.getY() - DetectionConstants.LIMELIGHT_POSITION.getY()
+            DetectionConstants.LIMELIGHT_POSITION.getX() + cameraToNote.getX(),
+            -DetectionConstants.LIMELIGHT_POSITION.getY()
+                + cameraToNote.getY() * (over90Deg ? -1 : 1)
+                
         );
 
         double theta2 = Math.atan(botToNote.getY() / botToNote.getX()) + botPose.getRotation().getRadians();
