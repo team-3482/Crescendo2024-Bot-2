@@ -81,6 +81,9 @@ public final class PhysicalConstants {
             /** Heuristic conversion factor. Works with Limelight Resolution 1280x960 */
             public static double PIXEL_TO_RAD = 900;
 
+            /** The width of the screen in pixels, based on resolution. */
+            public static int SCREEN_WIDTH = 1280;
+
             /** Guestimate for increased accuracy, added to calculated note distances. */
             public static double DISTANCE_TO_CENTER_OF_NOTE = Units.inchesToMeters(7);
         }

@@ -59,71 +59,48 @@ public class DetectionSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
-        // TODO : DetectionData.java
-        double[] widths = getWidths();
-        double[] tys = getTYs();
-        double[] txs = getTXs();
+        DetectionData[] detectionDatas = getDetectionDatas();
+        ArrayList<Pose2d> notePosesArray = new ArrayList<Pose2d>();
 
-        for (int i = 0; i < widths.length || i < tys.length; i++) {
-            System.out.printf(
-                "width : %s in ; pitch : %s in%n",
-                i < widths.length ? getNotePose(Units.metersToInches(getDistanceFromWidth(widths[i])), txs[i]).getTranslation().toString() : -1,
-                i < tys.length ? getNotePose(Units.metersToInches(getDistanceFromPitch(tys[i])), txs[i]).getTranslation().toString() : -1
-            );
-        }
-    }
-    
-    /**
-     * Helper that calculates widths from corner points of all on-screen targets.
-     * @return The width of each target in pixels.
-     */
-    private double[] getWidths() {
-        double[] rawDetections = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections")
-            .getDoubleArray(new double[0]);
-        ArrayList<Double> widths = new ArrayList<Double>();
-        
-        for (int i = 4; i < rawDetections.length; i += 12) {
-            // Finds the difference between top right and top left corners (horizontal)
-            double top = rawDetections[i+2] - rawDetections[i];
-            // Finds the difference between bottom right and bottom left corners (horizontal)
-            double bottom = rawDetections[i+4] - rawDetections[i+6];
-            
-            widths.add((top + bottom) / 2);
+        for (DetectionData data : detectionDatas) {
+            if (data.canTrustData) {
+                if (data.canTrustWidth) {
+                    notePosesArray.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
+                }
+                else {
+                    notePosesArray.add(getNotePose(getDistanceFromPitch(data.ty), data.tx));
+                }
+            }
         }
 
-        return widths.stream().mapToDouble(i -> i).toArray();
+        // TODO : Place these somewhere
+        Pose2d[] notePoses = notePosesArray.toArray(new Pose2d[notePosesArray.size()]);
     }
 
     /**
-     * Helper that gets the ty for every on-screen target.
-     * @return The ty of each target in degrees.
+     * Helper that sorts detection data and returns an array of detected Notes.
+     * @return Detection data.
      */
-    private double[] getTYs() {
+    private DetectionData[] getDetectionDatas() {
         double[] rawDetections = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections")
             .getDoubleArray(new double[0]);
-        ArrayList<Double> tys = new ArrayList<Double>();
+        ArrayList<DetectionData> detectionDatas = new ArrayList<DetectionData>();
 
-        for (int i = 2; i < rawDetections.length; i += 12) {
-            tys.add(rawDetections[i]);
+        for (int i = 0; i < rawDetections.length; i += 12) {
+            double tx = rawDetections[i + 1];
+            double ty = rawDetections[i + 2];
+
+            double[] xCorners = new double[]{
+                rawDetections[i + 4], // Top left
+                rawDetections[i + 6], // Top right
+                rawDetections[i + 8], // Bottom right
+                rawDetections[i + 10] // Borrom left
+            };
+
+            detectionDatas.add(new DetectionData(tx, ty, xCorners));
         }
 
-        return tys.stream().mapToDouble(i -> i).toArray();
-    }
-
-    /**
-     * Helper that gets the tx for every on-screen target.
-     * @return The tx of each target in degrees.
-     */
-    private double[] getTXs() {
-        double[] rawDetections = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections")
-            .getDoubleArray(new double[0]);
-        ArrayList<Double> txs = new ArrayList<Double>();
-
-        for (int i = 1; i < rawDetections.length; i += 12) {
-            txs.add(rawDetections[i]);
-        }
-
-        return txs.stream().mapToDouble(i -> i).toArray();
+        return detectionDatas.toArray(new DetectionData[detectionDatas.size()]);
     }
 
     /**
@@ -164,7 +141,8 @@ public class DetectionSubsystem extends SubsystemBase {
      */
     private Pose2d getNotePose(double distance, double tx) {
         double yaw = -DetectionConstants.LIMELIGHT_POSITION.getRotation().getZ();
-        double theta = yaw + Units.degreesToRadians(tx);
+        // TODO : Check if \/ Should be negative
+        double theta = yaw - Units.degreesToRadians(tx);
         
         Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
 

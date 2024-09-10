@@ -40,7 +40,7 @@ public class VisionData {
      * Checks if the average tag distance and bot's rotational and translational velocities
      * are reasonable for trusting rotation data, as well as MegaTag having >= 2 targets.
      * @return Whether rotation data can be trusted.
-     * @apiNote Dist <= 3 meters ; Angular <= 160 deg/s ; Translational <= 2.
+     * @apiNote Dist <= 3 meters ; Angular <= 160 deg/s ; Translational <= 2 m/s.
      */
     private boolean canTrustRotation() {
         ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
