@@ -12,6 +12,7 @@ public class DetectionData {
     public final double tx;
     public final double ty;
     public final double width;
+    public final double timestamp;
 
     /** If the bounding box is too close to the edge of the screen, it may not be the full note. */
     public final boolean canTrustWidth;
@@ -20,10 +21,11 @@ public class DetectionData {
     /**
      * Creates a new DetectionData object.
      */
-    public DetectionData(double tx, double ty, double[] xCorners) {
+    public DetectionData(double tx, double ty, double[] xCorners, double timestamp) {
         this.tx = tx;
         this.ty = ty;
         this.width = ((xCorners[1] - xCorners[0]) + (xCorners[2] - xCorners[3])) / 2;
+        this.timestamp = timestamp;
 
         // These are calculated when the measurement is created
         this.canTrustWidth = canTrustWidth(xCorners);

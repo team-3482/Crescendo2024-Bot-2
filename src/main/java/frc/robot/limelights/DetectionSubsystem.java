@@ -12,6 +12,9 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.DoubleArrayEntry;
+import edu.wpi.first.networktables.TimestampedDoubleArray;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -40,6 +43,8 @@ public class DetectionSubsystem extends SubsystemBase {
         return instance;
     }
 
+    private ArrayList<DetectionData> recentDetectionDatas = new ArrayList<DetectionData>();
+
     /** Creates a new DetectionSubsystem. */
     private DetectionSubsystem() {
         super("DetectionSubsystem");
@@ -59,32 +64,60 @@ public class DetectionSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
-        DetectionData[] detectionDatas = getDetectionDatas();
-        ArrayList<Pose2d> notePosesArray = new ArrayList<Pose2d>();
+        DetectionData[] detectionDatasArray = getDetectionDatas();
+        ArrayList<DetectionData> detectionDatasList = new ArrayList<DetectionData>();
 
-        for (DetectionData data : detectionDatas) {
+        for (DetectionData data : detectionDatasArray) {
             if (data.canTrustData) {
-                if (data.canTrustWidth) {
-                    notePosesArray.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
-                }
-                else {
-                    notePosesArray.add(getNotePose(getDistanceFromPitch(data.ty), data.tx));
-                }
+                detectionDatasList.add(data);
             }
         }
 
-        // TODO : Place these somewhere
-        Pose2d[] notePoses = notePosesArray.toArray(new Pose2d[notePosesArray.size()]);
+        if (detectionDatasList.size() != 0) {
+            this.recentDetectionDatas = detectionDatasList;
+        }
     }
+
+    /**
+     * Gets the recently saved note positions.
+     * @return The recently calculated note positions.
+     * @apiNote If there is no new data, it uses data up to 5 seconds old.
+     * New data always replaces old data.
+     */
+    public Pose2d[] getRecentNotePoses() {
+        ArrayList<Pose2d> notePosesList = new ArrayList<Pose2d>();
+
+        for (DetectionData data : this.recentDetectionDatas) {
+            if (data.timestamp >= Timer.getFPGATimestamp() - 5) {
+                if (data.canTrustWidth) {
+                    notePosesList.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
+                }
+                else {
+                    notePosesList.add(getNotePose(getDistanceFromPitch(data.ty), data.tx));
+                }
+            }
+        }
+        
+        return notePosesList.toArray(new Pose2d[notePosesList.size()]);
+    }
+
 
     /**
      * Helper that sorts detection data and returns an array of detected Notes.
      * @return Detection data.
+     * @see {@link LimelightHelpers#getBotPoseEstimate(String limelightName, String entryName)}
+     * for getting the data and timestamps.
      */
     private DetectionData[] getDetectionDatas() {
-        double[] rawDetections = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections")
-            .getDoubleArray(new double[0]);
+        DoubleArrayEntry rawDetectionsEntry = LimelightHelpers.getLimelightDoubleArrayEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections");
+        double tl = LimelightHelpers.getLimelightNTDouble(LimelightConstants.NOTE_DETECTION_LL, "tl");
+        double cl = LimelightHelpers.getLimelightNTDouble(LimelightConstants.NOTE_DETECTION_LL, "cl");
+
+        TimestampedDoubleArray tsValue = rawDetectionsEntry.getAtomic();
+        double[] rawDetections = tsValue.value;
         ArrayList<DetectionData> detectionDatas = new ArrayList<DetectionData>();
+
+        double adjustedTimestamp = (tsValue.timestamp / 1000000.0) - ((tl + cl) / 1000.0);
 
         for (int i = 0; i < rawDetections.length; i += 12) {
             double tx = rawDetections[i + 1];
@@ -97,7 +130,7 @@ public class DetectionSubsystem extends SubsystemBase {
                 rawDetections[i + 10] // Borrom left
             };
 
-            detectionDatas.add(new DetectionData(tx, ty, xCorners));
+            detectionDatas.add(new DetectionData(tx, ty, xCorners, adjustedTimestamp));
         }
 
         return detectionDatas.toArray(new DetectionData[detectionDatas.size()]);
@@ -133,30 +166,28 @@ public class DetectionSubsystem extends SubsystemBase {
     }
 
     /**
-     * Calculates the Pose of a note.
-     * @param distance - The distance to the note
+     * Calculates the Pose2d of a note in field space.
+     * @param distance - The distance to the note from the camera.
      * @param tx - Raw tx from the camera in degrees.
      * @return The Pose of the note.
      * @apiNote The rotation is 0 because notes are circular.
      */
     private Pose2d getNotePose(double distance, double tx) {
-        double yaw = -DetectionConstants.LIMELIGHT_POSITION.getRotation().getZ();
-        // TODO : Check if \/ Should be positive
+        double yaw = Math.PI / 2 + DetectionConstants.LIMELIGHT_POSITION.getRotation().getZ();
         double theta = yaw + Units.degreesToRadians(tx);
         boolean over90Deg = false;
-
-        if (Units.radiansToDegrees(theta) > 90) {
+        
+        if (theta > Math.PI / 2) {
             theta = Math.PI - theta;
             over90Deg = true;
         }
 
         Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
-
+        
         Translation2d cameraToNote = new Translation2d(
             distance * Math.sin(theta),
             distance * Math.cos(theta)
         );
-
 
         Translation2d botToNote = new Translation2d(
             DetectionConstants.LIMELIGHT_POSITION.getX() + cameraToNote.getX(),
