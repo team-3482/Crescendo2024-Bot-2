@@ -9,12 +9,10 @@ import frc.robot.constants.PhysicalConstants.ShooterConstants;
 import frc.robot.shooter.ShooterSubsystem;
 
 /** Spins the shooter motors. */
-public class SpinShooterCommand extends Command {
-    /**
-     * Creates a new SpinShooterCommand.
-     */
-    public SpinShooterCommand() {
-        setName("SpinShooterCommand");
+public class ShootCommand extends Command {
+    /** Creates a new ShootCommand. */
+    public ShootCommand() {
+        setName("ShootCommand");
         
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(ShooterSubsystem.getInstance());

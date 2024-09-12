@@ -10,10 +10,10 @@ import frc.robot.constants.PhysicalConstants.IntakeConstants;
 /** Spins the intake motor. */
 public class SpinIntakeCommand extends Command {
     /**
-     * Creates a new SpinIntakeCommand.
+     * Creates a new IntakeCommand.
      */
-    public SpinIntakeCommand() {
-        setName("SpinIntakeCommand");
+    public IntakeCommand() {
+        setName("IntakeCommand");
         
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(IntakeSubsystem.getInstance());
