@@ -8,7 +8,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.PhysicalConstants.IntakeConstants;
 
 /** Spins the intake motor. */
-public class SpinIntakeCommand extends Command {
+public class IntakeCommand extends Command {
     /**
      * Creates a new IntakeCommand.
      */
