@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
+import frc.robot.intake.SpinIntakeCommand;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
@@ -119,13 +120,16 @@ public class RobotContainer {
             .ignoringDisable(true)
         );
 
-        driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
-        driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
-            new Rotation2d(
-                Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
-                Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
-            )
-        )));
+//        driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
+//        driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
+//            new Rotation2d(
+//                Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
+//                Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
+//            )
+//        )));
+
+        driverController.x().whileTrue(new SpinIntakeCommand());
+        //driverController.y().whileTrue(new SpinShooterCommand());
 
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
