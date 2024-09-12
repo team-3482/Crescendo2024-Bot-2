@@ -7,13 +7,14 @@ package frc.robot.intake;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.PhysicalConstants.IntakeConstants;
 
-/** Spins the intake motors */
+/** Spins the intake motors. */
 public class SpinIntakeCommand extends Command {
     /**
-    * Creates a new SpinIntakeCommand.
-    */
+     * Creates a new SpinIntakeCommand.
+     */
     public SpinIntakeCommand() {
         setName("SpinIntakeCommand");
+        
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(IntakeSubsystem.getInstance());
     }

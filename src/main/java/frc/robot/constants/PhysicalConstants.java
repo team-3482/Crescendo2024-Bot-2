@@ -43,10 +43,11 @@ public final class PhysicalConstants {
         public static final double FOV_AREA = FOV_X * FOV_Y;
     }
 
-    /** Constants for Intake */
+    /** Constants for the intake subsystem. */
     public static final class IntakeConstants {
         public static final int LEFT_INTAKE_MOTOR_ID = 100;
         public static final int RIGHT_INTAKE_MOTOR_ID = 101;
-        public static final double INTAKE_SPEED = 0.25;
+        
+        public static final double INTAKE_SPEED = 0.1;
     }
 }
