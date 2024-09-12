@@ -50,4 +50,11 @@ public final class PhysicalConstants {
         
         public static final double INTAKE_SPEED = 0.1;
     }
+
+    /** Constants for the shooter subsystem. */
+    public static final class ShooterConstants {
+        public static final int TOP_SHOOTER_MOTOR_ID = 100;
+        public static final int BOTTOM_SHOOTER_MOTOR_ID = 101;
+        public static final double SHOOTER_SPEED = 0.5;
+    }
 }

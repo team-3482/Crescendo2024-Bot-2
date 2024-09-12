@@ -26,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
 import frc.robot.intake.SpinIntakeCommand;
+import frc.robot.shooter.SpinShooterCommand;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
@@ -129,7 +130,7 @@ public class RobotContainer {
 //        )));
 
         driverController.x().whileTrue(new SpinIntakeCommand());
-        //driverController.y().whileTrue(new SpinShooterCommand());
+        driverController.y().whileTrue(new SpinShooterCommand());
 
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
