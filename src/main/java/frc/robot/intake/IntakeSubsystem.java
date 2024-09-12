@@ -32,13 +32,17 @@ public class IntakeSubsystem extends SubsystemBase {
     private TalonFX leftIntakeMotor = new TalonFX(IntakeConstants.LEFT_INTAKE_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
     private TalonFX rightIntakeMotor = new TalonFX(IntakeConstants.RIGHT_INTAKE_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
 
+    /** Creates a new IntakeSubsystem. */
     private IntakeSubsystem() {
         super("IntakeSubsystem");
 
         leftIntakeMotor.setControl(new Follower(IntakeConstants.RIGHT_INTAKE_MOTOR_ID, true));
     }
 
-    /** Set the intake motors to spin between -1 and 1 */
+    /**
+     * Set the speed of the intake motors.
+     * @param speed - Between -1.0 and 1.0.
+     */
     public void setIntakeSpeed(double speed) {
         rightIntakeMotor.set(speed);
     }
