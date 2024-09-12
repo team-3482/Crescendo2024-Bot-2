@@ -5,10 +5,17 @@
 package frc.robot;
 
 import edu.wpi.first.net.PortForwarder;
-import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.constants.PhysicalConstants.LimelightConstants;
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+import frc.robot.utilities.BuildConstants;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -19,7 +26,7 @@ import frc.robot.constants.PhysicalConstants.LimelightConstants;
  * build.gradle file in the
  * project.
  */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
     private Command auton;
     
     /**
@@ -34,6 +41,25 @@ public class Robot extends TimedRobot {
             PortForwarder.add(port + 10, LimelightConstants.NOTE_DETECTION_LL + ".local", port);
             PortForwarder.add(port + 20, LimelightConstants.BACK_APRIL_TAG_LL + ".local", port);
         }
+
+        // record buildconstants data in telemetry
+        Logger.recordMetadata("ProjectName", "Crescendo2024-Bot-2");
+        Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
+        Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
+        Logger.recordMetadata("Dirty", String.valueOf(BuildConstants.DIRTY));
+
+        if (isReal()) {
+            Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
+            Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
+            new PowerDistribution(1, PowerDistribution.ModuleType.kRev); // Enables power distribution logging
+        } else {
+            setUseTiming(false); // Run as fast as possible
+            String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from AdvantageScope (or prompt the user)
+            Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
+            Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))); // Save outputs to a new log
+        }
+    
+        Logger.start();
 
         // Initialize RobotContainer and all subsystems
         RobotContainer.getInstance();
