@@ -5,7 +5,7 @@
 package frc.robot.shooter;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.constants.PhysicalConstants.IntakeConstants;
+import frc.robot.constants.PhysicalConstants.ShooterConstants;
 import frc.robot.shooter.ShooterSubsystem;
 
 /** Spins the shooter motors. */
@@ -23,7 +23,7 @@ public class SpinShooterCommand extends Command {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        ShooterSubsystem.getInstance().setShooterSpeed(IntakeConstants.INTAKE_SPEED);
+        ShooterSubsystem.getInstance().setShooterSpeed(ShooterConstants.SHOOTER_SPEED);
     }
 
     // Called every time the scheduler runs while the command is scheduled.
