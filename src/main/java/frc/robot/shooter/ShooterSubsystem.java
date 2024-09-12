@@ -32,7 +32,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private TalonFX topShooterMotor = new TalonFX(ShooterConstants.TOP_SHOOTER_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
     private TalonFX bottomShooterMotor = new TalonFX(ShooterConstants.BOTTOM_SHOOTER_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
 
-    /** Creates a new IntakeSubsystem. */
+    /** Creates a new ShooterSubsystem. */
     private ShooterSubsystem() {
         super("ShooterSubsystem");
 
@@ -40,7 +40,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     /**
-     * Set the speed of the intake motors.
+     * Set the speed of the shooter motors.
      * @param speed - Between -1.0 and 1.0.
      */
     public void setShooterSpeed(double speed) {

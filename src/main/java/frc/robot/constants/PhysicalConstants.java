@@ -55,6 +55,7 @@ public final class PhysicalConstants {
     public static final class ShooterConstants {
         public static final int TOP_SHOOTER_MOTOR_ID = 100;
         public static final int BOTTOM_SHOOTER_MOTOR_ID = 101;
-        public static final double SHOOTER_SPEED = 0.5;
+
+        public static final double SHOOTER_SPEED = 0.3;
     }
 }

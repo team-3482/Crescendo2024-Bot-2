@@ -2,28 +2,27 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.shooter;
+package frc.robot.intake;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.PhysicalConstants.IntakeConstants;
-import frc.robot.shooter.ShooterSubsystem;
 
-/** Spins the shooter motors. */
-public class SpinShooterCommand extends Command {
+/** Spins the intake motors. */
+public class IntakeCommand extends Command {
     /**
-     * Creates a new SpinShooterCommand.
+     * Creates a new IntakeCommand.
      */
-    public SpinShooterCommand() {
-        setName("SpinShooterCommand");
+    public IntakeCommand() {
+        setName("IntakeCommand");
         
         // Use addRequirements() here to declare subsystem dependencies.
-        addRequirements(ShooterSubsystem.getInstance());
+        addRequirements(IntakeSubsystem.getInstance());
     }
 
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        ShooterSubsystem.getInstance().setShooterSpeed(IntakeConstants.INTAKE_SPEED);
+        IntakeSubsystem.getInstance().setIntakeSpeed(IntakeConstants.INTAKE_SPEED);
     }
 
     // Called every time the scheduler runs while the command is scheduled.
@@ -33,7 +32,7 @@ public class SpinShooterCommand extends Command {
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        ShooterSubsystem.getInstance().setShooterSpeed(0);
+        IntakeSubsystem.getInstance().setIntakeSpeed(0);
     }
 
     // Returns true when the command should end.

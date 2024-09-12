@@ -25,8 +25,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
-import frc.robot.intake.SpinIntakeCommand;
-import frc.robot.shooter.SpinShooterCommand;
+import frc.robot.intake.IntakeCommand;
+import frc.robot.shooter.ShootCommand;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
@@ -129,9 +129,6 @@ public class RobotContainer {
 //            )
 //        )));
 
-        driverController.x().whileTrue(new SpinIntakeCommand());
-        driverController.y().whileTrue(new SpinShooterCommand());
-
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
         // Double Rectangle
@@ -197,14 +194,18 @@ public class RobotContainer {
         
     }
 
-    /** Configures the button bindings of the driver controller */
+    /**
+     * Configures the button bindings of the driver controller
+     * @apiNote POV, joysticks, and start / back are all used in {@link RobotContainer#configureDrivetrain()}
+     */
     private void configureDriverBindings() {
         // Cancel all currently scheduled commands
         driverController.b().onTrue(Commands.runOnce(() -> {
             CommandScheduler.getInstance().cancelAll();
         }));
 
-        // POV, joysticks, and start/back are all used in configureDrivetrain()
+        driverController.x().whileTrue(new IntakeCommand());
+        driverController.y().whileTrue(new ShootCommand());
     }
 
     /** Configures the button bindings of the driver controller */
