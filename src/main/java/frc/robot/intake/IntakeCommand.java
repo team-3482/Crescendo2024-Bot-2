@@ -5,15 +5,18 @@
 package frc.robot.intake;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.constants.PhysicalConstants.IntakeConstants;
 
-/** Spins the intake motor. */
+/** Spins the intake motors. */
 public class IntakeCommand extends Command {
+    private double speed;
+
     /**
      * Creates a new IntakeCommand.
      */
-    public IntakeCommand() {
+    public IntakeCommand(double speed) {
         setName("IntakeCommand");
+
+        this.speed = speed;
         
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(IntakeSubsystem.getInstance());
@@ -22,7 +25,7 @@ public class IntakeCommand extends Command {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        IntakeSubsystem.getInstance().setIntakeSpeed(IntakeConstants.INTAKE_SPEED);
+        IntakeSubsystem.getInstance().setIntakeSpeed(this.speed);
     }
 
     // Called every time the scheduler runs while the command is scheduled.

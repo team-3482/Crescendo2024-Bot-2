@@ -33,6 +33,7 @@ import frc.robot.swerve.TunerConstants;
 import frc.robot.vision.VisionSubsystem;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
+import frc.robot.constants.PhysicalConstants.IntakeConstants;
 import frc.robot.constants.Positions;
 
 public class RobotContainer {
@@ -204,8 +205,8 @@ public class RobotContainer {
             CommandScheduler.getInstance().cancelAll();
         }));
 
-        driverController.x().whileTrue(new IntakeCommand());
-        driverController.y().whileTrue(new ShootCommand());
+        driverController.x().whileTrue(new IntakeCommand(IntakeConstants.INTAKE_SPEED));
+        driverController.y().whileTrue(new IntakeCommand(-IntakeConstants.INTAKE_SPEED));
     }
 
     /** Configures the button bindings of the driver controller */

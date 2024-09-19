@@ -29,11 +29,14 @@ public class IntakeSubsystem extends SubsystemBase {
         return instance;
     }
 
-    private TalonFX intakeMotor = new TalonFX(IntakeConstants.INTAKE_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
+    private TalonFX leftIntakeMotor = new TalonFX(IntakeConstants.LEFT_INTAKE_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
+    private TalonFX rightIntakeMotor = new TalonFX(IntakeConstants.RIGHT_INTAKE_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
 
     /** Creates a new IntakeSubsystem. */
     private IntakeSubsystem() {
         super("IntakeSubsystem");
+
+        leftIntakeMotor.setControl(new Follower(IntakeConstants.RIGHT_INTAKE_MOTOR_ID, true));
     }
 
     /**
@@ -41,7 +44,7 @@ public class IntakeSubsystem extends SubsystemBase {
      * @param speed - Between -1.0 and 1.0.
      */
     public void setIntakeSpeed(double speed) {
-        intakeMotor.set(speed);
+        rightIntakeMotor.set(speed);
     }
 
     // This method will be called once per scheduler run
