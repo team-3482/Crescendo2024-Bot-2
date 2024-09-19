@@ -42,4 +42,11 @@ public final class PhysicalConstants {
         /** FOV area of the LL3g in degrees squared (used for smart cropping) */
         public static final double FOV_AREA = FOV_X * FOV_Y;
     }
+
+    public static final class MidiConstants {
+        public static final int INSTRUMENT_1_ID = 20;
+        public static final int INSTRUMENT_2_ID = 21;
+
+        public static final String chrpPath = "src/main/deploy/music/test.chrp";
+    }
 }

@@ -7,19 +7,26 @@ package frc.robot.midi;
 import edu.wpi.first.wpilibj2.command.Command;
 
 /** Play a midi file. */
-public class MidiPlayCommand extends Command {
+public class MidiCommand extends Command {
+    private String chrpPath;
+
     /**
-    * Creates a new MidiPlayCommand.
+     * * Creates a new MidiCommand.
+     * @param chrpPath Path to the chrp file.
     */
-    public MidiPlayCommand() {
-        setName("MidiPlayCommand");
+    public MidiCommand(String chrpPath) {
+        setName("MidiCommand");
         // Use addRequirements() here to declare subsystem dependencies.
-        addRequirements();
+        addRequirements(MidiSubsystem.getInstance());
+
+        this.chrpPath = chrpPath;
     }
 
     // Called when the command is initially scheduled.
     @Override
-    public void initialize() {}
+    public void initialize() {
+        MidiSubsystem.getInstance().playSong(chrpPath);
+    }
 
     // Called every time the scheduler runs while the command is scheduled.
     @Override
@@ -27,11 +34,11 @@ public class MidiPlayCommand extends Command {
 
     // Called once the command ends or is interrupted.
     @Override
-    public void end(boolean interrupted) {}
+    public void end(boolean interrupted) {
+        MidiSubsystem.getInstance().stopSong();
+    }
 
     // Returns true when the command should end.
     @Override
-    public boolean isFinished() {
-        return false;
-    }
+    public boolean isFinished() { return false; }
 }
