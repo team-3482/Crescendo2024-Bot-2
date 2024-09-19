@@ -1,6 +1,6 @@
 //LimelightHelpers v1.9 (REQUIRES 2024.9.1)
 
-package frc.robot.vision;
+package frc.robot.limelights;
 
 import edu.wpi.first.networktables.DoubleArrayEntry;
 import edu.wpi.first.networktables.NetworkTable;
