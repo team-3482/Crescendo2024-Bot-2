@@ -198,11 +198,6 @@ public class RobotContainer {
             CommandScheduler.getInstance().cancelAll();
         }));
 
-        // TODO : Tune wheel odometry
-        driverController.a().onTrue(Commands.runOnce(() -> {
-           TunerConstants.DriveTrain.seedFieldRelative(new Pose2d()); 
-        }));
-
         // POV, joysticks, and start/back are all used in configureDrivetrain()
     }
 
