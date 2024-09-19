@@ -9,7 +9,6 @@ import java.util.Map;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.commands.PathPlannerAuto;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -219,7 +218,6 @@ public class RobotContainer {
      * @return The command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return new PathPlannerAuto("Test1");
-        // return autoChooser.getSelected();
+        return autoChooser.getSelected();
     }
 }
