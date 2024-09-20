@@ -2,19 +2,25 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.utilities;
+package frc.robot.pivot;
 
 import edu.wpi.first.wpilibj2.command.Command;
 
-/** An example command that does nothing. */
-public class ExampleCommand extends Command {
+/** An Command that pivots the shooter to a position. */
+public class PivotCommand extends Command {
+    private double position;
+
     /**
-    * Creates a new ExampleCommand.
-    */
-    public ExampleCommand() {
-        setName("ExampleCommand");
+     * Creates a new ExampleCommand.
+     * @param position - The position in degrees.
+     */
+    public PivotCommand(double position) {
+        setName("PivotCommand");
+        
+        this.position = position;
+
         // Use addRequirements() here to declare subsystem dependencies.
-        addRequirements(ExampleSubsystem.getInstance());
+        addRequirements();
     }
 
     // Called when the command is initially scheduled.
@@ -35,3 +41,5 @@ public class ExampleCommand extends Command {
         return false;
     }
 }
+
+// TODO
