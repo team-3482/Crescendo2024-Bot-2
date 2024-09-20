@@ -4,14 +4,19 @@
 
 package frc.robot;
 
+import java.util.List;
 import java.util.Map;
 
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.GoalEndState;
 import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.path.PathPlannerPath;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
@@ -201,15 +206,8 @@ public class RobotContainer {
             CommandScheduler.getInstance().cancelAll();
         }));
 
-        PathConstraints constraints = new PathConstraints(
-            4.45, 1,
-            Units.degreesToRadians(270), Units.degreesToRadians(180)
-        );
-
         driverController.x().onTrue(
-            AutoBuilder.pathfindToPose(
-                DetectionSubsystem.getInstance().getFirstNote(),
-                constraints, 0, 0)
+            Commands.none()
         ); // TODO : This won't work
         driverController.y().onTrue(Commands.run(() -> TunerConstants.DriveTrain.seedFieldRelative(new Pose2d())));
 
@@ -231,6 +229,26 @@ public class RobotContainer {
      * @return The command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return autoChooser.getSelected();
+        // TODO : Move this
+        PathConstraints constraints = new PathConstraints(
+            4.45, 1,
+            Units.degreesToRadians(270), Units.degreesToRadians(180)
+        );
+        
+        List<Translation2d> bezierPoints = PathPlannerPath.bezierFromPoses(
+            TunerConstants.DriveTrain.getState().Pose,
+            DetectionSubsystem.getInstance().getFirstNote()
+        );
+
+        PathPlannerPath path = new PathPlannerPath(
+            bezierPoints,
+            constraints,
+            new GoalEndState(0.0, Rotation2d.fromDegrees(0))
+        );
+
+        path.preventFlipping = true;
+
+        return AutoBuilder.followPath(path);
+        // return autoChooser.getSelected();
     }
 }

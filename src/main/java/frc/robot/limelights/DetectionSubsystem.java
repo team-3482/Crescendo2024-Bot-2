@@ -77,13 +77,9 @@ public class DetectionSubsystem extends SubsystemBase {
 
         // TODO : Place these somewhere
         this.notePoses = notePosesArray.toArray(new Pose2d[notePosesArray.size()]);
-        
-        if (this.notePoses.length >= 1) {
-            System.out.println("x " + this.notePoses[0].getX() + "    y " + this.notePoses[0].getY());
-        }
     }
 
-    // TODO : Temp
+    // TODO : Fix this
     public Pose2d getFirstNote() {
         return this.notePoses.length >= 1 ? this.notePoses[0] : TunerConstants.DriveTrain.getState().Pose;
     }
@@ -151,11 +147,11 @@ public class DetectionSubsystem extends SubsystemBase {
      * @apiNote The rotation is 0 because notes are circular.
      */
     private Pose2d getNotePose(double distance, double tx) {
-        double yaw = -DetectionConstants.LIMELIGHT_POSITION.getRotation().getZ();
-        // TODO : Check if \/ Should be positive
+        double yaw = DetectionConstants.LIMELIGHT_POSITION.getRotation().getZ();
         double theta = yaw + Units.degreesToRadians(tx);
+        theta = Math.PI / 2 + theta;
         boolean over90Deg = false;
-
+        
         if (Units.radiansToDegrees(theta) > 90) {
             theta = Math.PI - theta;
             over90Deg = true;
