@@ -40,6 +40,8 @@ public class DetectionSubsystem extends SubsystemBase {
         return instance;
     }
 
+    private Pose2d[] notePoses = new Pose2d[0];
+
     /** Creates a new DetectionSubsystem. */
     private DetectionSubsystem() {
         super("DetectionSubsystem");
@@ -74,7 +76,16 @@ public class DetectionSubsystem extends SubsystemBase {
         }
 
         // TODO : Place these somewhere
-        Pose2d[] notePoses = notePosesArray.toArray(new Pose2d[notePosesArray.size()]);
+        this.notePoses = notePosesArray.toArray(new Pose2d[notePosesArray.size()]);
+        
+        if (this.notePoses.length >= 1) {
+            System.out.println("x " + this.notePoses[0].getX() + "    y " + this.notePoses[0].getY());
+        }
+    }
+
+    // TODO : Temp
+    public Pose2d getFirstNote() {
+        return this.notePoses.length >= 1 ? this.notePoses[0] : TunerConstants.DriveTrain.getState().Pose;
     }
 
     /**

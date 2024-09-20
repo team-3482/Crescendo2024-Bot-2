@@ -9,9 +9,10 @@ import java.util.Map;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.PathConstraints;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -98,9 +99,9 @@ public class RobotContainer {
             .withDeadband(MaxSpeed * ControllerConstants.DEADBAND).withRotationalDeadband(MaxAngularRate * ControllerConstants.DEADBAND) // Add a deadband
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric driving in open loop
         
-        final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
+        // final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
         final SwerveRequest.FieldCentric fieldCentricMove = new SwerveRequest.FieldCentric().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
-        final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
+        // final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
         final Telemetry logger = new Telemetry(MaxSpeed);
 
@@ -119,13 +120,13 @@ public class RobotContainer {
             .ignoringDisable(true)
         );
 
-        driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
-        driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
-            new Rotation2d(
-                Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
-                Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
-            )
-        )));
+        // driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
+        // driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
+        //     new Rotation2d(
+        //         Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
+        //         Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
+        //     )
+        // )));
 
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
@@ -199,6 +200,18 @@ public class RobotContainer {
         driverController.b().onTrue(Commands.runOnce(() -> {
             CommandScheduler.getInstance().cancelAll();
         }));
+
+        PathConstraints constraints = new PathConstraints(
+            4.45, 1,
+            Units.degreesToRadians(270), Units.degreesToRadians(180)
+        );
+
+        driverController.x().onTrue(
+            AutoBuilder.pathfindToPose(
+                DetectionSubsystem.getInstance().getFirstNote(),
+                constraints, 0, 0)
+        ); // TODO : This won't work
+        driverController.y().onTrue(Commands.run(() -> TunerConstants.DriveTrain.seedFieldRelative(new Pose2d())));
 
         // POV, joysticks, and start/back are all used in configureDrivetrain()
     }
