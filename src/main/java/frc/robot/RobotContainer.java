@@ -4,15 +4,20 @@
 
 package frc.robot;
 
+import java.util.List;
 import java.util.Map;
 
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.commands.PathPlannerAuto;
+import com.pathplanner.lib.path.GoalEndState;
+import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.path.PathPlannerPath;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -99,9 +104,9 @@ public class RobotContainer {
             .withDeadband(MaxSpeed * ControllerConstants.DEADBAND).withRotationalDeadband(MaxAngularRate * ControllerConstants.DEADBAND) // Add a deadband
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric driving in open loop
         
-        final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
+        // final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
         final SwerveRequest.FieldCentric fieldCentricMove = new SwerveRequest.FieldCentric().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
-        final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
+        // final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
         final Telemetry logger = new Telemetry(MaxSpeed);
 
@@ -120,13 +125,13 @@ public class RobotContainer {
             .ignoringDisable(true)
         );
 
-        driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
-        driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
-            new Rotation2d(
-                Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
-                Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
-            )
-        )));
+        // driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
+        // driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
+        //     new Rotation2d(
+        //         Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
+        //         Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
+        //     )
+        // )));
 
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
@@ -201,6 +206,11 @@ public class RobotContainer {
             CommandScheduler.getInstance().cancelAll();
         }));
 
+        driverController.x().onTrue(
+            Commands.none()
+        ); // TODO : This won't work
+        driverController.y().onTrue(Commands.run(() -> TunerConstants.DriveTrain.seedFieldRelative(new Pose2d())));
+
         // POV, joysticks, and start/back are all used in configureDrivetrain()
     }
 
@@ -219,7 +229,26 @@ public class RobotContainer {
      * @return The command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return new PathPlannerAuto("Test1");
+        // TODO : Move this
+        PathConstraints constraints = new PathConstraints(
+            4.45, 1,
+            Units.degreesToRadians(270), Units.degreesToRadians(180)
+        );
+        
+        List<Translation2d> bezierPoints = PathPlannerPath.bezierFromPoses(
+            TunerConstants.DriveTrain.getState().Pose,
+            DetectionSubsystem.getInstance().getFirstNote()
+        );
+
+        PathPlannerPath path = new PathPlannerPath(
+            bezierPoints,
+            constraints,
+            new GoalEndState(0.0, Rotation2d.fromDegrees(0))
+        );
+
+        path.preventFlipping = true;
+
+        return AutoBuilder.followPath(path);
         // return autoChooser.getSelected();
     }
 }
