@@ -183,7 +183,8 @@ public class RobotContainer {
     }
 
     /** Creates instances of each subsystem so periodic runs */
-    private void initializeSubsystems() {      
+    private void initializeSubsystems() {
+        // TODO : Uncomment once LLs are connected properly      
         // VisionSubsystem.getInstance();
         DetectionSubsystem.getInstance();
     }
