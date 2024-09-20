@@ -47,7 +47,7 @@ public class DriveToNoteCommand extends Command {
         }
 
         Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
-        Pose2d notePose = notePoses[0]; 
+        Pose2d notePose = notePoses[0];
 
         GoalEndState goalEndState = new GoalEndState(
             0,

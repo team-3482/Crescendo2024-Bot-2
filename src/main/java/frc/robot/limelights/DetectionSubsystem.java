@@ -13,14 +13,17 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.DoubleArrayEntry;
+import edu.wpi.first.networktables.DoubleArrayPublisher;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.TimestampedDoubleArray;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
-import frc.robot.constants.PhysicalConstants.LimelightConstants;
-import frc.robot.constants.PhysicalConstants.LimelightConstants.DetectionConstants;
+import frc.robot.constants.LimelightConstants;
+import frc.robot.constants.LimelightConstants.DetectionConstants;
 import frc.robot.swerve.TunerConstants;
 
 /** A class that manages note detection and associated calculations. */
@@ -45,26 +48,37 @@ public class DetectionSubsystem extends SubsystemBase {
 
     private ArrayList<DetectionData> recentDetectionDatas = new ArrayList<DetectionData>();
 
+    /* What to publish over networktables for telemetry */
+    private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
+    private final NetworkTable table = inst.getTable("Note Pose");
+    private final DoubleArrayPublisher note1 = table.getDoubleArrayTopic("note1").publish();
+    private final DoubleArrayPublisher note2 = table.getDoubleArrayTopic("note2").publish();
+    private final DoubleArrayPublisher note3 = table.getDoubleArrayTopic("note3").publish();
+
     /** Creates a new DetectionSubsystem. */
     private DetectionSubsystem() {
         super("DetectionSubsystem");
 
         // Shuffleboard camera feed.
-        HttpCamera frontLLCamera = new HttpCamera(
-            LimelightConstants.NOTE_DETECTION_LL,
-            "http://" + LimelightConstants.NOTE_DETECTION_LL + ".local:5800/stream.mjpg"
-        );
+        if (LimelightConstants.PUBLISH_CAMERA_FEEDS) {
+            HttpCamera frontLLCamera = new HttpCamera(
+                LimelightConstants.NOTE_DETECTION_LL,
+                "http://" + LimelightConstants.NOTE_DETECTION_LL + ".local:5800/stream.mjpg"
+            );
 
-        Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
-            .add(LimelightConstants.NOTE_DETECTION_LL, frontLLCamera)
-            .withWidget(BuiltInWidgets.kCameraStream)
-            .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
+            Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+                .add(LimelightConstants.NOTE_DETECTION_LL, frontLLCamera)
+                .withWidget(BuiltInWidgets.kCameraStream)
+                .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
+        }
     }
 
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
         DetectionData[] detectionDatasArray = getDetectionDatas();
+        if (detectionDatasArray.length == 0) return;
+
         ArrayList<DetectionData> detectionDatasList = new ArrayList<DetectionData>();
 
         for (DetectionData data : detectionDatasArray) {
@@ -75,7 +89,36 @@ public class DetectionSubsystem extends SubsystemBase {
 
         if (detectionDatasList.size() != 0) {
             this.recentDetectionDatas = detectionDatasList;
+
+            if (DetectionConstants.PUBLISH_NOTE_POSES) {
+                Pose2d[] recentNotePoses = getRecentNotePoses();
+                if (recentNotePoses.length >= 3) {
+                    this.note3.set(pose2dToDoubleArray(recentNotePoses[2]));
+                    this.note2.set(pose2dToDoubleArray(recentNotePoses[1]));
+                    this.note1.set(pose2dToDoubleArray(recentNotePoses[0]));
+                }
+                if (recentNotePoses.length <= 2) {
+                    this.note2.set(pose2dToDoubleArray(recentNotePoses[1]));
+                }
+                if (recentNotePoses.length == 1) {
+                    this.note1.set(pose2dToDoubleArray(recentNotePoses[1]));
+                }
+            }
         }
+    }
+    
+    /**
+     * Helper that turns a Pose2d into a NetworkTables-readable double array.
+     * @param pose - The pose to convert.
+     * @return The double array representation of the pose.
+     * @apiNote The rotation is in radians.
+     */
+    private double[] pose2dToDoubleArray(Pose2d pose) {
+        return new double[]{
+            pose.getX(),
+            pose.getY(),
+            pose.getRotation().getRadians()
+        };
     }
 
     /**

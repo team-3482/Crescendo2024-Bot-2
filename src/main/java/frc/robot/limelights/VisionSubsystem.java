@@ -20,8 +20,8 @@ import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
-import frc.robot.constants.PhysicalConstants.LimelightConstants;
-import frc.robot.constants.PhysicalConstants.LimelightConstants.VisionConstants;
+import frc.robot.constants.LimelightConstants;
+import frc.robot.constants.LimelightConstants.VisionConstants;
 import frc.robot.swerve.TunerConstants;
 
 /** 
@@ -67,24 +67,26 @@ public class VisionSubsystem extends SubsystemBase {
     private VisionSubsystem() {
         super("VisionSubsystem");
 
-        // Shuffleboard camera feeds.
-        HttpCamera frontLLCamera = new HttpCamera(
-            LimelightConstants.FRONT_APRIL_TAG_LL,
-            "http://" + LimelightConstants.FRONT_APRIL_TAG_LL + ".local:5800/stream.mjpg"
-        );
-        HttpCamera backLLCamera = new HttpCamera(
-            LimelightConstants.BACK_APRIL_TAG_LL,
-            "http://" + LimelightConstants.BACK_APRIL_TAG_LL + ".local:5800/stream.mjpg"
-        );
+        if (LimelightConstants.PUBLISH_CAMERA_FEEDS) {
+            // Shuffleboard camera feeds.
+            HttpCamera frontLLCamera = new HttpCamera(
+                LimelightConstants.FRONT_APRIL_TAG_LL,
+                "http://" + LimelightConstants.FRONT_APRIL_TAG_LL + ".local:5800/stream.mjpg"
+            );
+            HttpCamera backLLCamera = new HttpCamera(
+                LimelightConstants.BACK_APRIL_TAG_LL,
+                "http://" + LimelightConstants.BACK_APRIL_TAG_LL + ".local:5800/stream.mjpg"
+            );
 
-        Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
-            .add(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLCamera)
-            .withWidget(BuiltInWidgets.kCameraStream)
-            .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
-        Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
-            .add(LimelightConstants.BACK_APRIL_TAG_LL, backLLCamera)
-            .withWidget(BuiltInWidgets.kCameraStream)
-            .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
+            Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+                .add(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLCamera)
+                .withWidget(BuiltInWidgets.kCameraStream)
+                .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
+            Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+                .add(LimelightConstants.BACK_APRIL_TAG_LL, backLLCamera)
+                .withWidget(BuiltInWidgets.kCameraStream)
+                .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
+        }
     }
 
     // This method will be called once per scheduler run

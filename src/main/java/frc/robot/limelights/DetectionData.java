@@ -2,7 +2,7 @@ package frc.robot.limelights;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
-import frc.robot.constants.PhysicalConstants.LimelightConstants.DetectionConstants;
+import frc.robot.constants.LimelightConstants.DetectionConstants;
 import frc.robot.swerve.TunerConstants;
 
 /**
