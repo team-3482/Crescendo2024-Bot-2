@@ -5,15 +5,20 @@
 package frc.robot.shooter;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.constants.PhysicalConstants.ShooterConstants;
-import frc.robot.shooter.ShooterSubsystem;
 
-/** Spins the shooter motors. */
+/** Shoots a Note. */
 public class ShootCommand extends Command {
-    /** Creates a new ShootCommand. */
-    public ShootCommand() {
+    private double speed;
+
+    /**
+     * Creates a new ShootCommand.
+     * @param speed - The speed at which the shooting motors should run.
+     */
+    public ShootCommand(double speed) {
         setName("ShootCommand");
         
+        this.speed = speed;
+
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(ShooterSubsystem.getInstance());
     }
@@ -21,7 +26,7 @@ public class ShootCommand extends Command {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        ShooterSubsystem.getInstance().setShooterSpeed(ShooterConstants.SHOOTER_SPEED);
+        ShooterSubsystem.getInstance().setShooterSpeed(this.speed);
     }
 
     // Called every time the scheduler runs while the command is scheduled.

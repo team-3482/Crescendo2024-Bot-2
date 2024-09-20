@@ -12,7 +12,6 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -26,7 +25,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
 import frc.robot.intake.IntakeCommand;
-import frc.robot.shooter.ShootCommand;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
@@ -122,13 +120,13 @@ public class RobotContainer {
             .ignoringDisable(true)
         );
 
-//        driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
-//        driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
-//            new Rotation2d(
-//                Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
-//                Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
-//            )
-//        )));
+        // driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
+        // driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
+        //     new Rotation2d(
+        //         Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
+        //         Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
+        //     )
+        // )));
 
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));

@@ -6,12 +6,13 @@ package frc.robot.intake;
 
 import edu.wpi.first.wpilibj2.command.Command;
 
-/** Spins the intake motors. */
+/** Runs the intake for a Note. */
 public class IntakeCommand extends Command {
     private double speed;
 
     /**
      * Creates a new IntakeCommand.
+     * @param speed - The speed at which the intake motors should run.
      */
     public IntakeCommand(double speed) {
         setName("IntakeCommand");
@@ -41,6 +42,6 @@ public class IntakeCommand extends Command {
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return false;
+        return false; // TODO : Stopping logic with laser
     }
 }

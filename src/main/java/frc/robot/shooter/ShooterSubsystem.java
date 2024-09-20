@@ -51,3 +51,6 @@ public class ShooterSubsystem extends SubsystemBase {
     @Override
     public void periodic() {}
 }
+
+// TODO : PID/MM-based velocity control
+// TODO : Separate top/bottom ? Need testing to confirm efficacy
