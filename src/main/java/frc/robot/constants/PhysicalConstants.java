@@ -58,4 +58,34 @@ public final class PhysicalConstants {
 
         public static final double SHOOTER_SPEED = 0.3;
     }
+
+    /** Constants for the PivotSubsystem. */
+    public static final class PivotConstants {
+        public static final int LEFT_PIVOT_MOTOR_ID = 102;
+        public static final int RIGHT_PIVOT_MOTOR_ID = 103;
+
+        /** Upper soft stop angle in degrees. */
+        public static final int UPPER_ANGLE_LIMIT = 90;
+        /** Lower soft stop angle in degrees. */
+        public static final int LOWER_ANGLE_LIMIT = 0;
+        
+        // TODO : Get the ratio from CAD or Mech
+        /** This is the gear ratio from the sensor to the mechanism. */
+        public static final double ROTOR_TO_MECHANISM_RATIO = 0; 
+        
+        // TODO : Tune
+        /** Gains used for MotionMagic slot 0. */
+        public static final class PivotSlot0Gains {
+            public static final double kS = 0;
+            public static final double kV = 0;
+            public static final double kP = 0;
+            public static final double kI = 0;
+            public static final double kD = 0;
+        }
+
+        /* More constants used with MotionMagic. */
+        public static final double CRUISE_SPEED = 0;
+        public static final double CRUISE_ACCELERATION = 0;
+        public static final double MOTION_MAGIC_JERK = 0;
+    }
 }
