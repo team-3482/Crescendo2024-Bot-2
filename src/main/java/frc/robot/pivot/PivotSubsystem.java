@@ -50,6 +50,7 @@ public class PivotSubsystem extends SubsystemBase {
         super("PivotSubsystem");
 
         configureMotors();
+        setPositionHardStop();
     }
 
     // This method will be called once per scheduler run
@@ -61,7 +62,6 @@ public class PivotSubsystem extends SubsystemBase {
      * sets the follower on both motors.
      */
     private void configureMotors() {
-        // TODO : Configure MotionMagic
         TalonFXConfiguration configuration = new TalonFXConfiguration();
 
         FeedbackConfigs feedbackConfigs = configuration.Feedback;
@@ -88,10 +88,10 @@ public class PivotSubsystem extends SubsystemBase {
         motionMagicConfigs.MotionMagicJerk = PivotConstants.MOTION_MAGIC_JERK;
 
         // Motor-specific configurations.
-        motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive; // Right motor inverted.
+        motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive; // Right motor not inverted.
         this.rightPivotMotor.getConfigurator().apply(configuration);
-        
-        motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive; // Left motor not inverted.
+
+        motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive; // Left motor inverted.
         this.leftPivotMotor.getConfigurator().apply(configuration);
 
         this.leftPivotMotor.setControl(new Follower(PivotConstants.RIGHT_PIVOT_MOTOR_ID, true));
@@ -110,15 +110,6 @@ public class PivotSubsystem extends SubsystemBase {
             .withPosition(position);
         
         this.rightPivotMotor.setControl(control);
-    }
-
-    /**
-     * Sets the mechanism position of both motors.
-     * @param position - The position in degrees.
-     */
-    public void setMechanismPosition(double position) {
-        this.rightPivotMotor.setPosition(position);
-        this.leftPivotMotor.setPosition(position);
     }
 
     /**
@@ -148,10 +139,27 @@ public class PivotSubsystem extends SubsystemBase {
     }
 
     /**
-     * Gets the position of the Pivot.
+     * Sets the mechanism position of both motors.
+     * @param position - The position in degrees.
+     */
+    public void setPosition(double position) {
+        this.rightPivotMotor.setPosition(position);
+        this.leftPivotMotor.setPosition(position);
+    }
+
+    /**
+     * Sets the mechanism position of both motors to the lower hard stop.
+     * @apiNote See hard stop at {@link PivotConstants#LOWER_ANGLE_LIMIT}
+     */
+    public void setPositionHardStop() {
+        setPosition(PivotConstants.LOWER_ANGLE_LIMIT);
+    }
+
+    /**
+     * Gets the mechanism position of the motor.
      * @return The angle in degrees.
      */
     public double getPosition() {
-        return 0; // TODO : Do the math to go from rotor-to-angle
+        return this.rightPivotMotor.getPosition().getValueAsDouble();
     }
 }

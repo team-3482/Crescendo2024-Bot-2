@@ -12,6 +12,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -25,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
 import frc.robot.intake.IntakeCommand;
+import frc.robot.pivot.PivotSubsystem;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
@@ -120,13 +122,13 @@ public class RobotContainer {
             .ignoringDisable(true)
         );
 
-        // driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
-        // driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
-        //     new Rotation2d(
-        //         Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
-        //         Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
-        //     )
-        // )));
+        driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
+        driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
+            new Rotation2d(
+                Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
+                Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
+            )
+        )));
 
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
@@ -186,6 +188,8 @@ public class RobotContainer {
     /** Creates instances of each subsystem so periodic runs */
     private void initializeSubsystems() {      
         VisionSubsystem.getInstance();
+
+        PivotSubsystem.getInstance();
     }
 
     /** Register all NamedCommands for PathPlanner use */
@@ -202,19 +206,36 @@ public class RobotContainer {
         driverController.b().onTrue(Commands.runOnce(() -> {
             CommandScheduler.getInstance().cancelAll();
         }));
-
-        driverController.x().whileTrue(new IntakeCommand(IntakeConstants.INTAKE_SPEED));
-        driverController.y().whileTrue(new IntakeCommand(-IntakeConstants.INTAKE_SPEED));
     }
 
     /** Configures the button bindings of the driver controller */
     private void configureOperatorBindings() {
-        // Unused while building and testing new kraken swerve drive
-        
         // Cancel all currently scheduled commands
-        // operatorController.b().onTrue(Commands.runOnce(() -> {
-        //     CommandScheduler.getInstance().cancelAll();
-        // }));
+        operatorController.b().onTrue(Commands.runOnce(() -> {
+            CommandScheduler.getInstance().cancelAll();
+        }));
+
+        operatorController.pov(0)
+            .whileTrue(Commands.runEnd(
+                () -> PivotSubsystem.getInstance().setPivotSpeed(0.1, false),
+                () -> PivotSubsystem.getInstance().setPivotSpeed(0, false)));
+        operatorController.pov(180)
+            .whileTrue(Commands.runEnd(
+                () -> PivotSubsystem.getInstance().setPivotSpeed(-0.1, false),
+                () -> PivotSubsystem.getInstance().setPivotSpeed(0, false)));
+        operatorController.pov(90)
+            .whileTrue(Commands.runEnd(
+                () -> PivotSubsystem.getInstance().motionMagicPosition(20),
+                () -> PivotSubsystem.getInstance().setPivotSpeed(0)
+            ));
+        operatorController.pov(270)
+            .whileTrue(Commands.runEnd(
+                () -> PivotSubsystem.getInstance().motionMagicPosition(70),
+                () -> PivotSubsystem.getInstance().setPivotSpeed(0)
+            ));
+        
+        operatorController.x().whileTrue(new IntakeCommand(IntakeConstants.INTAKE_SPEED));
+        operatorController.y().whileTrue(new IntakeCommand(-IntakeConstants.INTAKE_SPEED));
     }
 
     /**
