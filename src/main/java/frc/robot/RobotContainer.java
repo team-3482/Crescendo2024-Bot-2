@@ -233,6 +233,7 @@ public class RobotContainer {
                 () -> PivotSubsystem.getInstance().motionMagicPosition(70),
                 () -> PivotSubsystem.getInstance().setPivotSpeed(0)
             ));
+        operatorController.a().onTrue(Commands.run(() -> PivotSubsystem.getInstance().setPositionHardStop()));
         
         operatorController.x().whileTrue(new IntakeCommand(IntakeConstants.INTAKE_SPEED));
         operatorController.y().whileTrue(new IntakeCommand(-IntakeConstants.INTAKE_SPEED));

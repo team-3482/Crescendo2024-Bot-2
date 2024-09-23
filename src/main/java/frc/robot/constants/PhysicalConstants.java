@@ -70,21 +70,25 @@ public final class PhysicalConstants {
         public static final double LOWER_ANGLE_LIMIT = 2.796678; // Hard stop
         
         /** This is the gear ratio from the sensor to the mechanism. */
-        public static final double ROTOR_TO_MECHANISM_RATIO = 100; // 5:1 -> 2:1 -> 10 : 1
+        public static final double ROTOR_TO_MECHANISM_RATIO = 100; // 5:1 -> 2:1 -> 10 : 1 = 100:1
         
         // TODO : Tune MotionMagic
         /** Gains used for MotionMagic slot 0. */
         public static final class PivotSlot0Gains {
-            public static final double kS = 0;
-            public static final double kV = 0;
-            public static final double kP = 0;
+            public static final double kS = 0.3; // 0.3 V output to overcome static friction
+            public static final double kV = 12 * PivotConstants.CRUISE_SPEED; // This is copied from their site ; not tuned
+            public static final double kA = 1 * PivotConstants.CRUISE_SPEED; // This is copied from thir site ; not tuned
+            public static final double kP = 4.2; // This is copied from their site : not tuned
             public static final double kI = 0;
-            public static final double kD = 0;
+            public static final double kD = 0.1; // This is copied from their site ; not tuned
         }
 
         /* More constants used with MotionMagic. */
-        public static final double CRUISE_SPEED = 0;
-        public static final double CRUISE_ACCELERATION = 0;
-        public static final double MOTION_MAGIC_JERK = 0;
+        /** Max mechanism rotations per second. */
+        public static final double CRUISE_SPEED = 0.45;
+        /** Max mechanism rotations per second^2 (any higher causes the bot to move) */
+        public static final double CRUISE_ACCELERATION = 1.5;
+
+        public static final double MOTION_MAGIC_JERK = 150;
     }
 }

@@ -17,6 +17,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.PhysicalConstants.PivotConstants;
 import frc.robot.constants.PhysicalConstants.RobotConstants;
@@ -55,7 +56,9 @@ public class PivotSubsystem extends SubsystemBase {
 
     // This method will be called once per scheduler run
     @Override
-    public void periodic() {}
+    public void periodic() {
+        System.out.printf("position : %f ; rotor : %f%n", getPosition(), this.rightPivotMotor.getRotorPosition().getValueAsDouble());
+    }
 
     /**
      * A helper method that configures MotionMagic and
@@ -77,6 +80,7 @@ public class PivotSubsystem extends SubsystemBase {
         Slot0Configs slot0Configs = configuration.Slot0;
         slot0Configs.kS = PivotSlot0Gains.kS;
         slot0Configs.kV = PivotSlot0Gains.kV;
+        slot0Configs.kA = PivotSlot0Gains.kA;
         slot0Configs.kP = PivotSlot0Gains.kP;
         slot0Configs.kI = PivotSlot0Gains.kI;
         slot0Configs.kD = PivotSlot0Gains.kD;
@@ -107,7 +111,7 @@ public class PivotSubsystem extends SubsystemBase {
 
         MotionMagicVoltage control = motionMagicVoltage
             .withSlot(0)
-            .withPosition(position);
+            .withPosition(Units.degreesToRotations(position));
         
         this.rightPivotMotor.setControl(control);
     }
@@ -143,6 +147,7 @@ public class PivotSubsystem extends SubsystemBase {
      * @param position - The position in degrees.
      */
     public void setPosition(double position) {
+        position = Units.degreesToRotations(position);
         this.rightPivotMotor.setPosition(position);
         this.leftPivotMotor.setPosition(position);
     }
@@ -160,6 +165,6 @@ public class PivotSubsystem extends SubsystemBase {
      * @return The angle in degrees.
      */
     public double getPosition() {
-        return this.rightPivotMotor.getPosition().getValueAsDouble();
+        return Units.rotationsToDegrees(this.rightPivotMotor.getPosition().getValueAsDouble());
     }
 }
