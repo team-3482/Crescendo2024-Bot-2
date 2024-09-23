@@ -5,8 +5,10 @@
 package frc.robot.midi;
 
 import com.ctre.phoenix6.Orchestra;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.PhysicalConstants.RobotConstants;
 import frc.robot.constants.PhysicalConstants.MidiConstants;
 
 public class MidiSubsystem extends SubsystemBase {
@@ -34,21 +36,24 @@ public class MidiSubsystem extends SubsystemBase {
     private MidiSubsystem() {
         super("MidiSubsystem");
 
-        orchestra.addInstrument(new TalonFX(MidiConstants.INSTRUMENT_1_ID), 0);
-        orchestra.addInstrument(new TalonFX(MidiConstants.INSTRUMENT_2_ID), 1);
+        orchestra.addInstrument(new TalonFX(MidiConstants.INSTRUMENT_1_ID, RobotConstants.CTRE_CAN_BUS),0);
+        orchestra.addInstrument(new TalonFX(MidiConstants.INSTRUMENT_2_ID, RobotConstants.CTRE_CAN_BUS), 1);
     }
 
     /**
-     * Play a song with the orchestra.
+     * Load a song with the orchestra.
      * @param chrpPath Path to the chrp file.
      */
-    public void playSong(String chrpPath){
+    public void loadSong(String chrpPath){
         orchestra.loadMusic(chrpPath);
+    }
+
+    public void playSong() {
         orchestra.play();
     }
 
     /** Stop current song */
-    public void stopSong(){
+    public void stopSong() {
         orchestra.stop();
     }
 

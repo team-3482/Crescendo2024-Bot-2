@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
+import frc.robot.midi.MidiCommand;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
@@ -199,6 +200,7 @@ public class RobotContainer {
             CommandScheduler.getInstance().cancelAll();
         }));
 
+        driverController.a().onTrue(new MidiCommand("song.chrp"));
         // POV, joysticks, and start/back are all used in configureDrivetrain()
     }
 
