@@ -90,35 +90,55 @@ public class RobotContainer {
      * This is based on the {@code Phoenix6 Swerve Example} that can be found on GitHub.
      */
     private void configureDrivetrain() {
+        final CommandSwerveDrivetrain drivetrain = TunerConstants.DriveTrain;
         final double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps; // kSpeedAt12VoltsMps desired top speed
         final double MaxAngularRate = 1.5 * Math.PI; // 3/4 of a rotation per second max angular velocity
-        final CommandSwerveDrivetrain drivetrain = TunerConstants.DriveTrain; // My drivetrain
+        // TODO 1 : Check if these feel natural
+        final double limitedMaxSpeed = MaxSpeed * 0.5;
+        final double limitedMaxAngularRate = MaxAngularRate * 0.5;
 
-        final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
-            .withDeadband(MaxSpeed * ControllerConstants.DEADBAND).withRotationalDeadband(MaxAngularRate * ControllerConstants.DEADBAND) // Add a deadband
-            .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // I want field-centric driving in open loop
-        
-        // final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
-        final SwerveRequest.FieldCentric fieldCentricMove = new SwerveRequest.FieldCentric().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
-        // final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
+        final SwerveRequest.FieldCentric fieldCentricDrive_withDeadband = new SwerveRequest.FieldCentric()
+            .withDeadband(limitedMaxSpeed * ControllerConstants.DEADBAND)
+            .withRotationalDeadband(limitedMaxAngularRate * ControllerConstants.DEADBAND) // Add a deadband
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
         final Telemetry logger = new Telemetry(MaxSpeed);
 
-        Trigger rightBumper = driverController.rightBumper();
+        Trigger leftTrigger = driverController.leftTrigger();
+        Trigger rightTrigger = driverController.rightTrigger();
 
-        drivetrain.setDefaultCommand( // Drivetrain will execute this command periodically
-            drivetrain.applyRequest(() ->
-                drive
-                // Drive forward with negative Y (forward)
-                .withVelocityX(-driverController.getLeftY() * MaxSpeed * (rightBumper.getAsBoolean() ? ControllerConstants.FINE_CONTROL_MULT : 1))
-                // Drive left with negative X (left)
-                .withVelocityY(-driverController.getLeftX() * MaxSpeed * (rightBumper.getAsBoolean() ? ControllerConstants.FINE_CONTROL_MULT : 1))
-                // Drive counterclockwise with negative X (left
-                .withRotationalRate(-driverController.getRightX() * MaxAngularRate * (rightBumper.getAsBoolean() ? ControllerConstants.FINE_CONTROL_MULT : 1))
-            )
+        // Drivetrain will execute this command periodically
+        drivetrain.setDefaultCommand(
+            drivetrain.applyRequest(() -> {
+                boolean topSpeed = leftTrigger.getAsBoolean();
+                boolean fineControl = rightTrigger.getAsBoolean();
+                
+                return fieldCentricDrive_withDeadband
+                    // Drive forward with negative Y (forward)
+                    .withVelocityX(
+                        -driverController.getLeftY()
+                        * (topSpeed ? MaxSpeed : limitedMaxSpeed)
+                        * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1)
+                    )
+                    // Drive left with negative X (left)
+                    .withVelocityY(
+                        -driverController.getLeftX()
+                        * (topSpeed ? MaxSpeed : limitedMaxSpeed)
+                        * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1)
+                    )
+                    // Drive counterclockwise with negative X (left)
+                    .withRotationalRate(
+                        -driverController.getRightX()
+                        * (topSpeed ? MaxAngularRate : limitedMaxAngularRate)
+                        * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1)
+                    );
+            })
             .ignoringDisable(true)
         );
 
+        // Useful for testing
+        // final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
+        // final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
         // driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
         // driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
         //     new Rotation2d(
@@ -126,6 +146,44 @@ public class RobotContainer {
         //         Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
         //     )
         // )));
+
+        // POV / D-PAD
+        final SwerveRequest.FieldCentric fieldCentricDrive = new SwerveRequest.FieldCentric()
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+        final SwerveRequest.RobotCentric robotCentricDrive = new SwerveRequest.RobotCentric()
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+        
+        // This looks terrible, but I can't think of a better way to do it </3
+        if (ControllerConstants.DPAD_DRIVE_INPUT) {
+            /** POV angle : [X velocity, Y velocity] in m/s */
+            final Map<Integer, Integer[]> povSpeeds = Map.ofEntries(
+                Map.entry(  0, new Integer[]{ 1,  0}),
+                Map.entry( 45, new Integer[]{ 1, -1}),
+                Map.entry( 90, new Integer[]{ 0, -1}),
+                Map.entry(135, new Integer[]{-1, -1}),
+                Map.entry(180, new Integer[]{-1,  0}),
+                Map.entry(225, new Integer[]{-1,  1}),
+                Map.entry(270, new Integer[]{ 0,  1}),
+                Map.entry(315, new Integer[]{ 1,  1})
+            );
+
+            povSpeeds.forEach(
+                (Integer angle, Integer[] speeds) -> driverController.pov(angle).whileTrue(
+                    drivetrain.applyRequest(() -> {
+                        boolean faster = leftTrigger.getAsBoolean();
+                        boolean robotCentric = rightTrigger.getAsBoolean();
+                        
+                        return robotCentric
+                            ? robotCentricDrive
+                                .withVelocityX(speeds[0] * (faster ? 1.5 : 0.25))
+                                .withVelocityY(speeds[0] * (faster ? 1.5 : 0.25))
+                            : fieldCentricDrive
+                                .withVelocityX(speeds[0] * (faster ? 1.5 : 0.25))
+                                .withVelocityY(speeds[1] * (faster ? 1.5 : 0.25));
+                    })
+                )
+            );
+        }
 
         // Burger
         driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
@@ -136,27 +194,6 @@ public class RobotContainer {
                 drivetrain.seedFieldRelative(estimatedPose);
             }
         }));
-
-        // This looks terrible, but I can't think of a better way to do it </3
-        if (ControllerConstants.DPAD_DRIVE_INPUT) {
-            /** POV angle : [X velocity, Y velocity] in m/s */
-            final Map<Integer, Double[]> povSpeeds = Map.ofEntries(
-                Map.entry(  0, new Double[]{ 0.25,  0.0}),
-                Map.entry( 45, new Double[]{ 0.25, -0.25}),
-                Map.entry( 90, new Double[]{ 0.0,  -0.25}),
-                Map.entry(135, new Double[]{-0.25, -0.25}),
-                Map.entry(180, new Double[]{-0.25,  0.0}),
-                Map.entry(225, new Double[]{-0.25,  0.25}),
-                Map.entry(270, new Double[]{ 0.0,   0.25}),
-                Map.entry(315, new Double[]{ 0.25,  0.25})
-            );
-
-            povSpeeds.forEach(
-                (Integer angle, Double[] speeds) -> driverController.pov(angle).whileTrue(
-                    drivetrain.applyRequest(() -> fieldCentricMove.withVelocityX(speeds[0]).withVelocityY(speeds[1]))
-                )
-            );
-        }
         
         drivetrain.registerTelemetry(logger::telemeterize);
 
@@ -184,8 +221,7 @@ public class RobotContainer {
 
     /** Creates instances of each subsystem so periodic runs */
     private void initializeSubsystems() {
-        // TODO : Uncomment once LLs are connected properly      
-        // VisionSubsystem.getInstance();
+        VisionSubsystem.getInstance();
         DetectionSubsystem.getInstance();
     }
 
@@ -201,11 +237,27 @@ public class RobotContainer {
             CommandScheduler.getInstance().cancelAll();
         }));
 
-        // TODO : Test DriveToNoteCommand()
-        driverController.x().onTrue(new DriveToNoteCommand());
-        driverController.y().onTrue(Commands.run(() -> TunerConstants.DriveTrain.seedFieldRelative(new Pose2d())));
+        /*
+         * POV, joysticks, and start/back are all used in configureDrivetrain()
+         *           Left joystick : Translational movement
+         *          Right joystick : Rotational movement
+         *          Start / Burger : Reset heading
+         * Back / Double Rectangle : Reset position to LL data (if not empty)
+         *    POV (overrides joys) : Directional movement -- 0.25 m/s
+         */
+        driverController.back().onTrue(
+            TunerConstants.DriveTrain.runOnce(() -> TunerConstants.DriveTrain.seedFieldRelative(new Pose2d()))
+        );
+        /*
+         * Triggers are also used in configureDrivetrain()
+         *      Left Trigger > 0.5 : Use TOP SPEED for joysticks
+         *                           Use 1.5 m/s for POV
+         *     Right Trigger > 0.5 : Use FINE CONTROL for joysticks
+         *                           Use ROBOT CENTRIC for POV 
+         */
 
-        // POV, joysticks, and start/back are all used in configureDrivetrain()
+        // TODO 2 : Test DriveToNoteCommand() with live path-adjustment (look at PP)
+        driverController.x().onTrue(new DriveToNoteCommand());
     }
 
     /** Configures the button bindings of the driver controller */
