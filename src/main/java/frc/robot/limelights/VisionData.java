@@ -45,8 +45,9 @@ public class VisionData {
     private boolean canTrustRotation() {
         ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
         double velocity = Math.sqrt(Math.pow(robotChassisSpeeds.vxMetersPerSecond, 2) + Math.pow(robotChassisSpeeds.vyMetersPerSecond, 2));
-        return this.MegaTag2 != null    // 3 Meters
-            && this.MegaTag2.avgTagDist <= 3
+        return this.MegaTag2 != null
+            // && this.MegaTag2.tagCount > 0
+            && this.MegaTag2.avgTagDist <= 3 // 3 Meters
             && this.MegaTag != null
             && this.MegaTag.tagCount >= 2
             && Units.radiansToDegrees(robotChassisSpeeds.omegaRadiansPerSecond) <= 160
@@ -59,6 +60,7 @@ public class VisionData {
      */
     private boolean canTrustPosition() {
         return this.MegaTag2 != null
+            // && this.MegaTag2.tagCount > 0
             && this.MegaTag2.avgTagDist < VisionConstants.TRUST_TAG_DISTANCE
             && TunerConstants.DriveTrain.getState().Pose.getTranslation().getDistance(this.MegaTag2.pose.getTranslation()) <= 1.5;
     }

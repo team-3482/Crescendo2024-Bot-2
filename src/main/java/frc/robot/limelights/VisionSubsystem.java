@@ -168,9 +168,9 @@ public class VisionSubsystem extends SubsystemBase {
             if (Math.abs(Units.radiansToDegrees(robotChassisSpeeds.omegaRadiansPerSecond)) > 270
                 || Math.abs(velocity) > 2 // m/s
                 || (this.lastHeartbeatBackLL != heartbeatBackLL && this.lastHeartbeatFrontLL != heartbeatFrontLL)
-                || ((frontLLDataMT2 != null && frontLLDataMT2.tagCount == 0) && (backLLDataMT2 != null && backLLDataMT2.tagCount == 0))
-                || (frontLLDataMT2 != null && frontLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE
-                    && backLLDataMT2 != null && backLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE)) {
+                || ((frontLLDataMT2 == null || frontLLDataMT2.tagCount == 0) && (backLLDataMT2 == null || backLLDataMT2.tagCount == 0))
+                || (frontLLDataMT2 == null || frontLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE
+                    && backLLDataMT2 == null || backLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE)) {
                 return new VisionData[0];
             }
         }
