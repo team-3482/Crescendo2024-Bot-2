@@ -16,6 +16,7 @@ import edu.wpi.first.networktables.DoubleArrayEntry;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.TimestampedDoubleArray;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
@@ -24,7 +25,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.LimelightConstants;
 import frc.robot.constants.LimelightConstants.DetectionConstants;
-import frc.robot.swerve.TunerConstants;
 
 /** A class that manages note detection and associated calculations. */
 public class DetectionSubsystem extends SubsystemBase {
@@ -54,6 +54,7 @@ public class DetectionSubsystem extends SubsystemBase {
     private final DoubleArrayPublisher note1 = table.getDoubleArrayTopic("note1").publish();
     private final DoubleArrayPublisher note2 = table.getDoubleArrayTopic("note2").publish();
     private final DoubleArrayPublisher note3 = table.getDoubleArrayTopic("note3").publish();
+    private final StringPublisher fieldTypePub = table.getStringTopic(".type").publish();
 
     /** Creates a new DetectionSubsystem. */
     private DetectionSubsystem() {
@@ -94,10 +95,8 @@ public class DetectionSubsystem extends SubsystemBase {
                 Pose2d[] recentNotePoses = getRecentNotePoses();
                 if (recentNotePoses.length >= 3) {
                     this.note3.set(pose2dToDoubleArray(recentNotePoses[2]));
-                    this.note2.set(pose2dToDoubleArray(recentNotePoses[1]));
-                    this.note1.set(pose2dToDoubleArray(recentNotePoses[0]));
                 }
-                if (recentNotePoses.length == 2) {
+                if (recentNotePoses.length >= 2) {
                     this.note2.set(pose2dToDoubleArray(recentNotePoses[1]));
                 }
                 if (recentNotePoses.length >= 1) {
@@ -105,6 +104,8 @@ public class DetectionSubsystem extends SubsystemBase {
                 }
             }
         }
+
+        this.fieldTypePub.set("Field2d");
     }
     
     /**
@@ -136,7 +137,9 @@ public class DetectionSubsystem extends SubsystemBase {
                     notePosesList.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
                 }
                 else {
-                    notePosesList.add(getNotePose(getDistanceFromPitch(data.ty), data.tx));
+                    // TODO 2.4 : See how bad pathfinding to these innacurate notes is
+                    notePosesList.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
+                    // notePosesList.add(getNotePose(getDistanceFromPitch(data.ty), data.tx));
                 }
             }
         }
@@ -190,9 +193,12 @@ public class DetectionSubsystem extends SubsystemBase {
         double theta = noteWidth / DetectionConstants.PIXEL_TO_RAD;
         
         double distance = DetectionConstants.NOTE_DIAMETER / Math.tan(theta);
+        distance += DetectionConstants.NOTE_DIAMETER / 2;
         // TODO 2.2 : Test DriveToNoteCommand() with and without this line
-        // distance += Units.inchesToMeters(2.5 * Math.log(distance + 0.5));
-        return distance + DetectionConstants.DISTANCE_TO_CENTER_OF_NOTE;
+        // TODO 2.3 : Adjust a value (the multiplier)
+        // Heuristic for adjusting position for better accuracy ;
+        // Takes meter distance and returns inches of adjustment
+        return Units.inchesToMeters(3 * Math.log(distance + 0.25));
     }
 
     /**
@@ -200,17 +206,17 @@ public class DetectionSubsystem extends SubsystemBase {
      * This is less accurate and should be used when the full width of the note is unavailable.
      * @param ty - Raw ty from the camera in degrees.
      * @return The distance to the note in meters.
+     * @deprecated Very innacurate. Not sure if math issue or LL ty accuracy issue.
      */
     private double getDistanceFromPitch(double ty) {
-        // TODO ASAP : Fix this math !!
         double pitch = DetectionConstants.LIMELIGHT_POSITION.getRotation().getY();
-        double theta = pitch + Units.degreesToRadians(ty);
+        double theta = Math.abs(pitch + Units.degreesToRadians(ty));
         double limelightHeight = DetectionConstants.LIMELIGHT_POSITION.getZ();
         
-        double distance = (limelightHeight + Math.signum(theta) * DetectionConstants.NOTE_HEIGHT) / Math.tan(Math.abs(theta));
+        double distance = (limelightHeight - DetectionConstants.NOTE_HEIGHT) / Math.tan(theta);
         // System.out.println(distance);
         // distance += Units.inchesToMeters(2 * Math.log(distance));
-        return distance + DetectionConstants.DISTANCE_TO_CENTER_OF_NOTE;
+        return distance;// + DetectionConstants.NOTE_DIAMETER / 2;
     }
 
     /**
@@ -230,7 +236,11 @@ public class DetectionSubsystem extends SubsystemBase {
             over90Deg = true;
         }
 
-        Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
+        // Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
+        Pose2d botPose = new Pose2d(
+            new Translation2d(),
+            Rotation2d.fromDegrees(0)
+        );
         
         Translation2d cameraToNote = new Translation2d(
             distance * Math.sin(theta),

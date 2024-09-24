@@ -78,8 +78,5 @@ public final class LimelightConstants {
 
         /** The width of the screen in pixels, based on resolution. */
         public static int SCREEN_WIDTH = 1280;
-
-        /** Guestimate for increased accuracy, added to calculated note distances. */
-        public static double DISTANCE_TO_CENTER_OF_NOTE = Units.inchesToMeters(6);
     }
 }
