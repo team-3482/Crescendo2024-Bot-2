@@ -36,13 +36,13 @@ public class DetectionData {
      * Checks that the corners of the bounding box are not close to then edge of the screen.
      * @param xCorners - The corners to use. TL, TR, BR, BL.
      * @return If the full width is within the screen.
+     * @apiNote Within 35 px of the edges.
      */
     private boolean canTrustWidth(double[] xCorners) {
-        // TODO : check if width is origin at crosshair or bottom left
-        return xCorners[0] - 10 > 0
-            && xCorners[3] - 10 > 0
-            && xCorners[1] + 10 < DetectionConstants.SCREEN_WIDTH
-            && xCorners[2] + 10 < DetectionConstants.SCREEN_WIDTH;
+        return xCorners[0] - 35 > 0
+            && xCorners[3] - 35 > 0
+            && xCorners[1] + 35 < DetectionConstants.SCREEN_WIDTH
+            && xCorners[2] + 35 < DetectionConstants.SCREEN_WIDTH;
     }
 
     /**
