@@ -47,6 +47,6 @@ public final class PhysicalConstants {
         public static final int INSTRUMENT_1_ID = 20;
         public static final int INSTRUMENT_2_ID = 21;
 
-        public static final String chrpPath = "src/main/deploy/music/test.chrp";
+        public static final String chrpPath = "entrance_of_the_gladiators.chrp";
     }
 }

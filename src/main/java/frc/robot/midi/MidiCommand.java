@@ -25,7 +25,6 @@ public class MidiCommand extends Command {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        MidiSubsystem.getInstance().loadSong(chrpPath);
         MidiSubsystem.getInstance().playSong();
     }
 
@@ -41,5 +40,7 @@ public class MidiCommand extends Command {
 
     // Returns true when the command should end.
     @Override
-    public boolean isFinished() { return false; }
+    public boolean isFinished() {
+        return !MidiSubsystem.getInstance().getIsPlaying();
+    }
 }
