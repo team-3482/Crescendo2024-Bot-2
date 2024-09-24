@@ -97,11 +97,11 @@ public class DetectionSubsystem extends SubsystemBase {
                     this.note2.set(pose2dToDoubleArray(recentNotePoses[1]));
                     this.note1.set(pose2dToDoubleArray(recentNotePoses[0]));
                 }
-                if (recentNotePoses.length <= 2) {
+                if (recentNotePoses.length == 2) {
                     this.note2.set(pose2dToDoubleArray(recentNotePoses[1]));
                 }
-                if (recentNotePoses.length == 1) {
-                    this.note1.set(pose2dToDoubleArray(recentNotePoses[1]));
+                if (recentNotePoses.length >= 1) {
+                    this.note1.set(pose2dToDoubleArray(recentNotePoses[0]));
                 }
             }
         }
@@ -190,21 +190,26 @@ public class DetectionSubsystem extends SubsystemBase {
         double theta = noteWidth / DetectionConstants.PIXEL_TO_RAD;
         
         double distance = DetectionConstants.NOTE_DIAMETER / Math.tan(theta);
+        // TODO 2.2 : Test DriveToNoteCommand() with and without this line
+        // distance += Units.inchesToMeters(2.5 * Math.log(distance + 0.5));
         return distance + DetectionConstants.DISTANCE_TO_CENTER_OF_NOTE;
     }
 
     /**
      * Calculates the distance of a note using the vertical angle.
-     * This is less accurate but should be used when the full width of the note is unavailable.
+     * This is less accurate and should be used when the full width of the note is unavailable.
      * @param ty - Raw ty from the camera in degrees.
      * @return The distance to the note in meters.
      */
     private double getDistanceFromPitch(double ty) {
+        // TODO ASAP : Fix this math !!
         double pitch = DetectionConstants.LIMELIGHT_POSITION.getRotation().getY();
-        double theta = Math.abs(pitch + Units.degreesToRadians(ty));
+        double theta = pitch + Units.degreesToRadians(ty);
         double limelightHeight = DetectionConstants.LIMELIGHT_POSITION.getZ();
         
-        double distance = (limelightHeight - DetectionConstants.NOTE_HEIGHT) / Math.tan(theta);
+        double distance = (limelightHeight + Math.signum(theta) * DetectionConstants.NOTE_HEIGHT) / Math.tan(Math.abs(theta));
+        // System.out.println(distance);
+        // distance += Units.inchesToMeters(2 * Math.log(distance));
         return distance + DetectionConstants.DISTANCE_TO_CENTER_OF_NOTE;
     }
 
