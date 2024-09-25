@@ -93,7 +93,6 @@ public class RobotContainer {
         final CommandSwerveDrivetrain drivetrain = TunerConstants.DriveTrain;
         final double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps; // kSpeedAt12VoltsMps desired top speed
         final double MaxAngularRate = 1.5 * Math.PI; // 3/4 of a rotation per second max angular velocity
-        // TODO 1 : Check if these feel natural
         final double limitedMaxSpeed = MaxSpeed * 0.5;
         final double limitedMaxAngularRate = MaxAngularRate * 0.5;
 
@@ -172,11 +171,12 @@ public class RobotContainer {
                     drivetrain.applyRequest(() -> {
                         boolean faster = leftTrigger.getAsBoolean();
                         boolean robotCentric = rightTrigger.getAsBoolean();
+                        System.out.println(robotCentric);
                         
                         return robotCentric
                             ? robotCentricDrive
                                 .withVelocityX(speeds[0] * (faster ? 1.5 : 0.25))
-                                .withVelocityY(speeds[0] * (faster ? 1.5 : 0.25))
+                                .withVelocityY(speeds[1] * (faster ? 1.5 : 0.25))
                             : fieldCentricDrive
                                 .withVelocityX(speeds[0] * (faster ? 1.5 : 0.25))
                                 .withVelocityY(speeds[1] * (faster ? 1.5 : 0.25));
