@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.LimelightConstants;
 import frc.robot.constants.LimelightConstants.DetectionConstants;
+import frc.robot.swerve.TunerConstants;
 
 /** A class that manages note detection and associated calculations. */
 public class DetectionSubsystem extends SubsystemBase {
@@ -138,7 +139,8 @@ public class DetectionSubsystem extends SubsystemBase {
                 }
                 else {
                     // TODO 2.4 : See how bad pathfinding to these innacurate notes is
-                    notePosesList.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
+                    // notePosesList.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
+                    notePosesList.add(TunerConstants.DriveTrain.getState().Pose);
                     // notePosesList.add(getNotePose(getDistanceFromPitch(data.ty), data.tx));
                 }
             }
@@ -194,11 +196,9 @@ public class DetectionSubsystem extends SubsystemBase {
         
         double distance = DetectionConstants.NOTE_DIAMETER / Math.tan(theta);
         distance += DetectionConstants.NOTE_DIAMETER / 2;
-        // TODO 2.2 : Test DriveToNoteCommand() with and without this line
-        // TODO 2.3 : Adjust a value (the multiplier)
         // Heuristic for adjusting position for better accuracy ;
         // Takes meter distance and returns inches of adjustment
-        return Units.inchesToMeters(3 * Math.log(distance + 0.25));
+        return distance + Units.inchesToMeters(3 * Math.log(distance + 0.25));
     }
 
     /**

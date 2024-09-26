@@ -75,7 +75,7 @@ public class DriveToNoteCommand extends Command {
 
         // Make sure it's still targetting the same note (10 cm error allowed),
         // or one that's no more than 35 cm away from the original target
-        if (distance >= 0.10 && distance <= 0.35) {
+        if (distance > 0.10 && distance < 0.35) {
             CommandScheduler.getInstance().cancel(this.pathingCommand);
             this.pathingCommand = generatePath(newNotePose);
             CommandScheduler.getInstance().schedule(this.pathingCommand);
