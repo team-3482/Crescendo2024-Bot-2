@@ -8,12 +8,14 @@ import com.ctre.phoenix6.Orchestra;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.PhysicalConstants.RobotConstants;
-import frc.robot.constants.PhysicalConstants.MidiConstants;
+import frc.robot.swerve.TunerConstants;
 
 public class MidiSubsystem extends SubsystemBase {
-    // Thread-safe singleton design pattern.
+    // Thread-safe singleton design pattern. 
     private static volatile MidiSubsystem instance;
     private static Object mutex = new Object();
+    private static final int[] orchestraDevices = { 5, 6, 7, 8, 11, 12, 11, 12, 13 };
+    private String chrpPath;
 
     public static MidiSubsystem getInstance() {
         MidiSubsystem result = instance;
@@ -35,10 +37,16 @@ public class MidiSubsystem extends SubsystemBase {
     private MidiSubsystem() {
         super("MidiSubsystem");
 
-        orchestra.addInstrument(new TalonFX(MidiConstants.INSTRUMENT_1_ID, RobotConstants.CTRE_CAN_BUS),0);
-        orchestra.addInstrument(new TalonFX(MidiConstants.INSTRUMENT_2_ID, RobotConstants.CTRE_CAN_BUS), 1);
+        for (int i = 0; i < orchestraDevices.length; i++) {
+            orchestra.addInstrument(new TalonFX(orchestraDevices[i], RobotConstants.CTRE_CAN_BUS));
+        }
 
-        orchestra.loadMusic(MidiConstants.chrpPath);
+        orchestra.loadMusic(chrpPath);
+    }
+
+    /** Set the path of the chrp file. */
+    public void setChrpPath(String chrpPath) {
+        this.chrpPath = chrpPath;
     }
 
     /** Start playing the song */

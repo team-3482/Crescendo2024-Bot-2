@@ -25,6 +25,8 @@ public class MidiCommand extends Command {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
+        MidiSubsystem.getInstance().setChrpPath(chrpPath);
+
         MidiSubsystem.getInstance().playSong();
     }
 
