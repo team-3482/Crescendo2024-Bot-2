@@ -27,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
 import frc.robot.intake.IntakeCommand;
 import frc.robot.pivot.PivotSubsystem;
+import frc.robot.pivot.ResetAtHardstopCommand;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
@@ -204,6 +205,7 @@ public class RobotContainer {
     private void configureDriverBindings() {
         // Cancel all currently scheduled commands
         driverController.b().onTrue(Commands.runOnce(() -> {
+            PivotSubsystem.getInstance().setPivotSpeed(0); // Cancel running MotionMagic
             CommandScheduler.getInstance().cancelAll();
         }));
     }
@@ -212,6 +214,7 @@ public class RobotContainer {
     private void configureOperatorBindings() {
         // Cancel all currently scheduled commands
         operatorController.b().onTrue(Commands.runOnce(() -> {
+            PivotSubsystem.getInstance().setPivotSpeed(0); // Cancel running MotionMagic
             CommandScheduler.getInstance().cancelAll();
         }));
 
@@ -233,7 +236,7 @@ public class RobotContainer {
                 () -> PivotSubsystem.getInstance().motionMagicPosition(90),
                 () -> PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition())
             ));
-        operatorController.a().onTrue(Commands.run(() -> PivotSubsystem.getInstance().setPositionHardStop()));
+        operatorController.a().onTrue(new ResetAtHardstopCommand(true));
         
         operatorController.x().whileTrue(new IntakeCommand(IntakeConstants.INTAKE_SPEED));
         operatorController.y().whileTrue(new IntakeCommand(-IntakeConstants.INTAKE_SPEED));

@@ -51,21 +51,26 @@ public class PivotSubsystem extends SubsystemBase {
     private PivotSubsystem() {
         super("PivotSubsystem");
 
-        configureMotors();
+        configureMotionMagic();
         setPositionHardStop();
+
+        // 20 ms update frequency (1 robot cycle)
+        this.rightPivotMotor.getPosition().setUpdateFrequency(50);
+        this.rightPivotMotor.getVelocity().setUpdateFrequency(50);
+        // Right motor used for all PivotSubsystem control (get/set position)
+        this.leftPivotMotor.setControl(new Follower(PivotConstants.RIGHT_PIVOT_MOTOR_ID, true));
     }
 
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
-        System.out.printf("position : %f ; rotor : %f%n", getPosition(), this.rightPivotMotor.getRotorPosition().getValueAsDouble());
+        System.out.printf("Position : %f deg%n", getPosition());
     }
 
     /**
-     * A helper method that configures MotionMagic and
-     * sets the follower on both motors.
+     * A helper method that configures MotionMagic on both motors.
      */
-    private void configureMotors() {
+    private void configureMotionMagic() {
         TalonFXConfiguration configuration = new TalonFXConfiguration();
 
         FeedbackConfigs feedbackConfigs = configuration.Feedback;
@@ -100,8 +105,6 @@ public class PivotSubsystem extends SubsystemBase {
 
         motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive; // Left motor inverted.
         this.leftPivotMotor.getConfigurator().apply(configuration);
-
-        this.leftPivotMotor.setControl(new Follower(PivotConstants.RIGHT_PIVOT_MOTOR_ID, true));
     }
 
     /**
@@ -164,10 +167,18 @@ public class PivotSubsystem extends SubsystemBase {
     }
 
     /**
-     * Gets the mechanism position of the motor.
+     * Gets the mechanism position of the right motor.
      * @return The angle in degrees.
      */
     public double getPosition() {
         return Units.rotationsToDegrees(this.rightPivotMotor.getPosition().getValueAsDouble());
+    }
+
+    /**
+     * Gets the mechanism velocity of the right motor.
+     * @return The velocity in degrees/s.
+     */
+    public double getVelocity() {
+        return Units.rotationsToDegrees(this.rightPivotMotor.getVelocity().getValueAsDouble());
     }
 }
