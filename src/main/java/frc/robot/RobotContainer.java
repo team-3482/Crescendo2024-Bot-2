@@ -26,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
 import frc.robot.intake.IntakeCommand;
+import frc.robot.pivot.ManuallyPivotCommand;
 import frc.robot.pivot.PivotSubsystem;
 import frc.robot.pivot.ResetAtHardstopCommand;
 import frc.robot.swerve.CommandSwerveDrivetrain;
@@ -205,7 +206,6 @@ public class RobotContainer {
     private void configureDriverBindings() {
         // Cancel all currently scheduled commands
         driverController.b().onTrue(Commands.runOnce(() -> {
-            PivotSubsystem.getInstance().setPivotSpeed(0); // Cancel running MotionMagic
             CommandScheduler.getInstance().cancelAll();
         }));
     }
@@ -214,27 +214,25 @@ public class RobotContainer {
     private void configureOperatorBindings() {
         // Cancel all currently scheduled commands
         operatorController.b().onTrue(Commands.runOnce(() -> {
-            PivotSubsystem.getInstance().setPivotSpeed(0); // Cancel running MotionMagic
             CommandScheduler.getInstance().cancelAll();
         }));
 
-        operatorController.pov(0)
-            .whileTrue(Commands.runEnd(
-                () -> PivotSubsystem.getInstance().setPivotSpeed(0.1, false),
-                () -> PivotSubsystem.getInstance().setPivotSpeed(0, false)));
-        operatorController.pov(180)
-            .whileTrue(Commands.runEnd(
-                () -> PivotSubsystem.getInstance().setPivotSpeed(-0.1, false),
-                () -> PivotSubsystem.getInstance().setPivotSpeed(0, false)));
+        PivotSubsystem.getInstance().setDefaultCommand(new ManuallyPivotCommand(
+            () -> operatorController.getRightTriggerAxis(),
+            () -> operatorController.getLeftTriggerAxis())
+        );
+
         operatorController.pov(90)
             .whileTrue(Commands.runEnd(
                 () -> PivotSubsystem.getInstance().motionMagicPosition(5),
-                () -> PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition())
+                () -> PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition()),
+                PivotSubsystem.getInstance()
             ));
         operatorController.pov(270)
             .whileTrue(Commands.runEnd(
                 () -> PivotSubsystem.getInstance().motionMagicPosition(90),
-                () -> PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition())
+                () -> PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition()),
+                PivotSubsystem.getInstance()
             ));
         operatorController.a().onTrue(new ResetAtHardstopCommand(true));
         

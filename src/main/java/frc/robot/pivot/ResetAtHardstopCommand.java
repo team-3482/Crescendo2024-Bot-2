@@ -22,7 +22,7 @@ public class ResetAtHardstopCommand extends Command {
     /**
      * Creates a new ExampleCommand.
      * @param nearCurrentStop - Whether or not to only update the hard stop position
-     * if it is within 5 degrees of the believed position.
+     * if it is within 3 degrees of the believed position.
      */
     public ResetAtHardstopCommand(boolean nearCurrentStop) {
         setName("ResetAtHardstopCommand");
@@ -37,7 +37,7 @@ public class ResetAtHardstopCommand extends Command {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        this.timer.reset();
+        this.timer.restart();
         this.hasMovedDown = false;
         
         PivotSubsystem.getInstance().setPivotSpeed(-0.1, false);
@@ -54,6 +54,8 @@ public class ResetAtHardstopCommand extends Command {
         else if (!this.hasMovedDown && PivotSubsystem.getInstance().getVelocity() < 0
         ) {
             this.hasMovedDown = true;
+            this.timer.stop();
+            this.timer.reset();
         }
 
         else if (this.timer.get() == 0 && PivotSubsystem.getInstance().getVelocity() == 0) {
@@ -74,7 +76,7 @@ public class ResetAtHardstopCommand extends Command {
 
         if (!interrupted) { // If interrupted, assume it probably isn't at the hard stop
             double difference = PivotConstants.LOWER_ANGLE_LIMIT - PivotSubsystem.getInstance().getPosition();
-            if (!nearCurrentStop || Math.abs(difference) <= 5) {
+            if (!nearCurrentStop || Math.abs(difference) <= 3) {
                 PivotSubsystem.getInstance().setPositionHardStop();
             }
         }
