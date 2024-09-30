@@ -13,6 +13,7 @@ import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
@@ -78,6 +79,8 @@ public class PivotSubsystem extends SubsystemBase {
 
         // Set Motion Magic gains in slot 0.
         Slot0Configs slot0Configs = configuration.Slot0;
+        slot0Configs.GravityType = GravityTypeValue.Arm_Cosine;
+        slot0Configs.kG = PivotSlot0Gains.kG;
         slot0Configs.kS = PivotSlot0Gains.kS;
         slot0Configs.kV = PivotSlot0Gains.kV;
         slot0Configs.kA = PivotSlot0Gains.kA;
@@ -88,8 +91,8 @@ public class PivotSubsystem extends SubsystemBase {
         // Set acceleration and cruise velocity.
         MotionMagicConfigs motionMagicConfigs = configuration.MotionMagic;
         motionMagicConfigs.MotionMagicCruiseVelocity = PivotConstants.CRUISE_SPEED;
-        motionMagicConfigs.MotionMagicAcceleration = PivotConstants.CRUISE_ACCELERATION;
-        motionMagicConfigs.MotionMagicJerk = PivotConstants.MOTION_MAGIC_JERK;
+        motionMagicConfigs.MotionMagicAcceleration = PivotConstants.ACCELERATION;
+        // motionMagicConfigs.MotionMagicJerk = PivotConstants.MOTION_MAGIC_JERK;
 
         // Motor-specific configurations.
         motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive; // Right motor not inverted.

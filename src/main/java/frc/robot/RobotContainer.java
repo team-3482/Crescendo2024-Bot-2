@@ -225,13 +225,13 @@ public class RobotContainer {
                 () -> PivotSubsystem.getInstance().setPivotSpeed(0, false)));
         operatorController.pov(90)
             .whileTrue(Commands.runEnd(
-                () -> PivotSubsystem.getInstance().motionMagicPosition(20),
-                () -> PivotSubsystem.getInstance().setPivotSpeed(0)
+                () -> PivotSubsystem.getInstance().motionMagicPosition(5),
+                () -> PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition())
             ));
         operatorController.pov(270)
             .whileTrue(Commands.runEnd(
-                () -> PivotSubsystem.getInstance().motionMagicPosition(70),
-                () -> PivotSubsystem.getInstance().setPivotSpeed(0)
+                () -> PivotSubsystem.getInstance().motionMagicPosition(90),
+                () -> PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition())
             ));
         operatorController.a().onTrue(Commands.run(() -> PivotSubsystem.getInstance().setPositionHardStop()));
         
