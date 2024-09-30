@@ -17,19 +17,31 @@ public class ManuallyPivotCommand extends Command {
     private final SlewRateLimiter speedLimiter;
 
     private boolean holding;
+    private boolean restorePosition;
 
     /**
      * Creates a new ExampleCommand.
      * @param positiveSpeed - Expects a value between 0 and 1.0.
      * @param negativeSpeed - Expects a value between 0 and 1.0.
+     * @param restorePosition - Whether or not to return to holding the position
+     * before the bot was disabled (thus, moving the pivot back to its previously saved state).
+     * If this is false, the pivot will hold whatever position it has when un-disabled.
+     * @implNote Restoring disabled position can cause the pivot to move to an unexpected position,
+     * so hands MUST be off the bot before enabling. 
      */
-    public ManuallyPivotCommand(Supplier<Double> positiveSpeed, Supplier<Double> negativeSpeed) {
+    public ManuallyPivotCommand(
+        Supplier<Double> positiveSpeed, Supplier<Double> negativeSpeed,
+        boolean restorePosition
+    ) {
         setName("ExampleCommand");
 
         this.positiveSpeed = positiveSpeed;
         this.negativeSpeed = negativeSpeed;
-        this.holding = false;
+        
         this.speedLimiter = new SlewRateLimiter(0.3);
+        
+        this.holding = false;
+        this.restorePosition = restorePosition;
 
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(PivotSubsystem.getInstance());
@@ -39,6 +51,10 @@ public class ManuallyPivotCommand extends Command {
     @Override
     public void initialize() {
         this.speedLimiter.reset(0);
+
+        if (!this.restorePosition) {
+            this.holding = false;
+        }
     }
 
     // Called every time the scheduler runs while the command is scheduled.

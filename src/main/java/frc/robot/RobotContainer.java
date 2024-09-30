@@ -219,20 +219,25 @@ public class RobotContainer {
 
         PivotSubsystem.getInstance().setDefaultCommand(new ManuallyPivotCommand(
             () -> operatorController.getRightTriggerAxis(),
-            () -> operatorController.getLeftTriggerAxis())
-        );
+            () -> operatorController.getLeftTriggerAxis(),
+            false
+        ));
 
-        operatorController.pov(90)
-            .whileTrue(Commands.runEnd(
-                () -> PivotSubsystem.getInstance().motionMagicPosition(5),
-                () -> PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition()),
-                PivotSubsystem.getInstance()
-            ));
         operatorController.pov(270)
-            .whileTrue(Commands.runEnd(
-                () -> PivotSubsystem.getInstance().motionMagicPosition(90),
-                () -> PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition()),
-                PivotSubsystem.getInstance()
+            .whileTrue(PivotSubsystem.getInstance().run(
+                () -> PivotSubsystem.getInstance().motionMagicPosition(90)
+            ));
+        operatorController.pov(0)
+            .whileTrue(PivotSubsystem.getInstance().run(
+                () -> PivotSubsystem.getInstance().motionMagicPosition(70)
+            ));
+        operatorController.pov(90)
+            .whileTrue(PivotSubsystem.getInstance().run(
+                () -> PivotSubsystem.getInstance().motionMagicPosition(45)
+            ));
+        operatorController.pov(180)
+            .whileTrue(PivotSubsystem.getInstance().run(
+                () -> PivotSubsystem.getInstance().motionMagicPosition(5)
             ));
         operatorController.a().onTrue(new ResetAtHardstopCommand(true));
         
