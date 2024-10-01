@@ -17,6 +17,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.MotionMagicIsRunningValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
@@ -69,6 +70,7 @@ public class PivotSubsystem extends SubsystemBase {
         // 20 ms update frequency (1 robot cycle)
         this.rightPivotMotor.getPosition().setUpdateFrequency(50);
         this.rightPivotMotor.getVelocity().setUpdateFrequency(50);
+        this.rightPivotMotor.getMotionMagicIsRunning().setUpdateFrequency(50);
         // Right motor used for all PivotSubsystem control (get/set position)
         this.leftPivotMotor.setControl(new Follower(PivotConstants.RIGHT_PIVOT_MOTOR_ID, true));
     }
@@ -192,5 +194,13 @@ public class PivotSubsystem extends SubsystemBase {
      */
     public double getVelocity() {
         return Units.rotationsToDegrees(this.rightPivotMotor.getVelocity().getValueAsDouble());
+    }
+
+    /**
+     * Checks if MotionMagic is enabled on the right motor.
+     * @return Whether or not MotionMagic is running.
+     */
+    public boolean motionMagicIsRunning() {
+        return this.rightPivotMotor.getMotionMagicIsRunning().getValue() == MotionMagicIsRunningValue.Enabled;
     }
 }

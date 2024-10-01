@@ -67,7 +67,9 @@ public class ManuallyPivotCommand extends Command {
         
         // If no input, hold position
         if (!this.holding && positive == 0 && negative == 0) {
-            PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition());
+            if (!PivotSubsystem.getInstance().motionMagicIsRunning()) {
+                PivotSubsystem.getInstance().motionMagicPosition(PivotSubsystem.getInstance().getPosition());
+            } // TODO PIVOT (1) : Check if this prevents the small decrease in angle after using POV
             this.speedLimiter.reset(0);
             this.holding = true;
         }

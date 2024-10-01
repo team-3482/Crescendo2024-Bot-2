@@ -26,7 +26,7 @@ public class IntakeCommand extends Command {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        IntakeSubsystem.getInstance().setIntakeSpeed(this.speed);
+        IntakeSubsystem.getInstance().setSpeed(this.speed);
     }
 
     // Called every time the scheduler runs while the command is scheduled.
@@ -36,12 +36,12 @@ public class IntakeCommand extends Command {
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        IntakeSubsystem.getInstance().setIntakeSpeed(0);
+        IntakeSubsystem.getInstance().setSpeed(0);
     }
 
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return false; // TODO : Stopping logic with laser
+        return false; // TODO LATER : Stopping logic with laser
     }
 }

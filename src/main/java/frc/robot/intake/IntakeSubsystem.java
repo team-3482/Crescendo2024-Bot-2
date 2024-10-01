@@ -47,7 +47,7 @@ public class IntakeSubsystem extends SubsystemBase {
      * Set the speed of the intake motors.
      * @param speed - Between -1.0 and 1.0.
      */
-    public void setIntakeSpeed(double speed) {
+    public void setSpeed(double speed) {
         rightIntakeMotor.set(speed);
     }
 
@@ -56,6 +56,6 @@ public class IntakeSubsystem extends SubsystemBase {
      * @return Whether or not the laser beam is broken.
      */
     public boolean hasNote() {
-        return false; // TODO : IR Breakbeam
+        return false; // TODO MAX : IR Breakbeam
     }
 }

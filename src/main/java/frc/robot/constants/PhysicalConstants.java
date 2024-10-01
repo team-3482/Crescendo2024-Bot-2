@@ -56,7 +56,33 @@ public final class PhysicalConstants {
         public static final int TOP_SHOOTER_MOTOR_ID = 31;
         public static final int BOTTOM_SHOOTER_MOTOR_ID = 30;
 
-        public static final double SHOOTER_SPEED = 0.3;
+        /** This is the gear ratio from the sensor to the rollers. */
+        public static final double ROTOR_TO_MECHANISM_RATIO = (double) 25 / 9; // 50:18
+
+        // TODO SHOOTER (2.?) : Reasonable Velocity Tolerance
+        /** Tolerance for Commands using MotionMagic in rot/s. */
+        public static final double VELOCITY_TOLERANCE = 0;
+
+        // TODO SHOOTER (2.2) : Tune MotionMagic
+        /** Gains used for MotionMagic slot 0. */
+        public static final class ShooterSlot0Gains {
+            public static final double kG = 0;
+            public static final double kS = 0;
+            public static final double kV = 0;
+            public static final double kA = 0;
+            public static final double kP = 0;
+            public static final double kI = 0;
+            public static final double kD = 0;
+        }
+
+        // TODO SHOOTER (2.1) : FIND MAX ACCEL / JERK
+        /* More constants used with MotionMagic. */
+        /** Max mechanism rotations per second. */
+        public static final double CRUISE_SPEED = 0; // 0 = no max speed
+        /** Max mechanism rotations per second^2 */
+        public static final double ACCELERATION = 0;
+        /** Max mechanism rotations per second^3 */
+        public static final double JERK = 0;
     }
 
     /** Constants for the PivotSubsystem. */
@@ -69,15 +95,18 @@ public final class PhysicalConstants {
         /** Lower soft stop angle in degrees. */
         public static final double LOWER_ANGLE_LIMIT = 2.796678; // Hard stop
         
-        /** This is the gear ratio from the sensor to the mechanism. */
+        /** This is the gear ratio from the sensor to the pivot. */
         public static final double ROTOR_TO_MECHANISM_RATIO = 100; // 5:1 -> 2:1 -> 10 : 1 = 100:1
         
-        /** Gains used for MotionMagic slot 0, which is the gains for going up. */
+        /** Tolerance for Commands using MotionMagic in degrees. */
+        public static final double POSITION_TOLERANCE = 0.5;
+
+        /** Gains used for MotionMagic slot 0. */
         public static final class PivotSlot0Gains {
             public static final double kG = 0.24;
             public static final double kS = 0.1;
             public static final double kV = 0;
-            public static final double kA = 0; 
+            public static final double kA = 0;
             public static final double kP = 512;
             public static final double kI = 0;
             public static final double kD = 8;
@@ -88,7 +117,5 @@ public final class PhysicalConstants {
         public static final double CRUISE_SPEED = 0.5;
         /** Max mechanism rotations per second^2 (any higher causes the bot to move) */
         public static final double ACCELERATION = 1.25;
-
-        // public static final double MOTION_MAGIC_JERK = 150;
     }
 }

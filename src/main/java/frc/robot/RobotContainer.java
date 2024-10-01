@@ -225,24 +225,22 @@ public class RobotContainer {
             () -> operatorController.getLeftTriggerAxis(),
             false
         ));
+        operatorController.a().onTrue(new ResetAtHardstopCommand(true));
 
-        operatorController.pov(270)
+        operatorController.pov(180)
             .whileTrue(PivotSubsystem.getInstance().run(
                 () -> PivotSubsystem.getInstance().motionMagicPosition(90)
             ));
         operatorController.pov(0)
             .whileTrue(PivotSubsystem.getInstance().run(
-                () -> PivotSubsystem.getInstance().motionMagicPosition(70)
-            ));
-        operatorController.pov(90)
-            .whileTrue(PivotSubsystem.getInstance().run(
-                () -> PivotSubsystem.getInstance().motionMagicPosition(45)
-            ));
-        operatorController.pov(180)
-            .whileTrue(PivotSubsystem.getInstance().run(
                 () -> PivotSubsystem.getInstance().motionMagicPosition(5)
             ));
-        operatorController.a().onTrue(new ResetAtHardstopCommand(true));
+        
+        // TODO SHOOTER (2) : MotionMagicVelocity
+        operatorController.pov(90)
+            .whileTrue(PivotSubsystem.getInstance().run(
+                () -> ShooterSubsystem.getInstance().motionMagicVelocity(1)
+            ));
         
         operatorController.x().whileTrue(new IntakeCommand(IntakeConstants.INTAKE_SPEED));
         operatorController.y().whileTrue(new IntakeCommand(-IntakeConstants.INTAKE_SPEED));
