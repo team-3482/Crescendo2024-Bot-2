@@ -39,6 +39,10 @@ public class IntakeSubsystem extends SubsystemBase {
         leftIntakeMotor.setControl(new Follower(IntakeConstants.RIGHT_INTAKE_MOTOR_ID, true));
     }
 
+    // This method will be called once per scheduler run
+    @Override
+    public void periodic() {}
+
     /**
      * Set the speed of the intake motors.
      * @param speed - Between -1.0 and 1.0.
@@ -47,7 +51,11 @@ public class IntakeSubsystem extends SubsystemBase {
         rightIntakeMotor.set(speed);
     }
 
-    // This method will be called once per scheduler run
-    @Override
-    public void periodic() {}
+    /** 
+     * Checks whether or not there is a note in the Intake.
+     * @return Whether or not the laser beam is broken.
+     */
+    public boolean hasNote() {
+        return false; // TODO : IR Breakbeam
+    }
 }
