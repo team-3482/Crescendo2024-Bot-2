@@ -42,7 +42,11 @@ public class TunerConstants {
     // Theoretical free speed (m/s) at 12v applied output;
     // This needs to be tuned to your individual robot
     public static final double kSpeedAt12VoltsMps = 4.45; // 4.73 by default
-    // Acceleration is about 2.25 m/s^2
+    // TODO 1 : Find MAX MODULE SPEED
+    // TODO 2 : Find MAX ACCELERATION (for PP)
+    // TODO 3 : Find MAX ROT ACCEL (for PP)
+    // TODO 4 : Global Max Velocity in PP = MAXMODSPEED-0.5 m/s (to allow some rotation to happen)
+    // TODO 5 : Global Max Angular Velocity in PP = FIND
 
     // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
     // This may need to be tuned to your individual robot

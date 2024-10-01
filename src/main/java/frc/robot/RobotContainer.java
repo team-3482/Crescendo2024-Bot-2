@@ -11,6 +11,7 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -256,8 +257,26 @@ public class RobotContainer {
          *                           Use ROBOT CENTRIC for POV 
          */
 
-        // TODO 2 : Test DriveToNoteCommand() with live path-adjustment (look at PP)
-        driverController.x().onTrue(new DriveToNoteCommand());
+        // TODO LATER : Test DriveToNoteCommand() with live path-adjustment (look at PP)
+        // driverController.x().onTrue(new DriveToNoteCommand());
+
+        // TODO 1 : Find MAX MODULE SPEED / VELOCITY
+        // TODO 2 : Find MAX ACCEL (for PP)
+        driverController.y().whileTrue(TunerConstants.DriveTrain.run(
+            () -> TunerConstants.DriveTrain.applyRequest(
+                () -> new SwerveRequest.SysIdSwerveTranslation()
+                    .withVolts(Units.Volts.of(12))
+            )
+        ));
+
+        // TODO 5 : Global Max Angular Velocity in PP = FIND
+        // TODO 3 : Find MAX ROT ACCEL (for PP)
+        driverController.x().whileTrue(TunerConstants.DriveTrain.run(
+            () -> TunerConstants.DriveTrain.applyRequest(
+                () -> new SwerveRequest.SysIdSwerveRotation()
+                    .withVolts(Units.Volts.of(12))
+            )
+        ));
     }
 
     /** Configures the button bindings of the driver controller */

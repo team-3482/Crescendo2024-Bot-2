@@ -68,14 +68,15 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
             this::getCurrentRobotChassisSpeeds,
             (speeds) -> this.setControl(AutoRequest.withSpeeds(speeds)), // Consumer of ChassisSpeeds to drive the robot
             new HolonomicPathFollowerConfig(
-                new PIDConstants(5, 0, 0),
-                new PIDConstants(2.5, 0.5, 0),
+                new PIDConstants(5, 0, 0), // TODO 6 : Translation Test
+                new PIDConstants(2.5, 0.5, 0), // TODO 7 : Rotation Test 1 & 2
                 TunerConstants.kSpeedAt12VoltsMps,
                 driveBaseRadius,
                 new ReplanningConfig()
             ),
             () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red, // Assume the path needs to be flipped for Red vs Blue, this is normally the case
-            this); // Subsystem for requirements
+            this // Subsystem for requirements
+        );
     }
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier) {
@@ -120,5 +121,9 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
                 hasAppliedOperatorPerspective = true;
             });
         }
+
+        ChassisSpeeds speeds = getCurrentRobotChassisSpeeds();
+        double v = Math.sqrt(Math.pow(speeds.vxMetersPerSecond, 2) + Math.pow(speeds.vyMetersPerSecond, 2));
+        System.out.printf("Velocity : %f m/s ; Rot : %f rad/s%n", v, speeds.omegaRadiansPerSecond);
     }
 }
