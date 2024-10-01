@@ -10,6 +10,7 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
@@ -256,27 +257,115 @@ public class RobotContainer {
          *     Right Trigger > 0.5 : Use FINE CONTROL for joysticks
          *                           Use ROBOT CENTRIC for POV 
          */
-
         // TODO LATER : Test DriveToNoteCommand() with live path-adjustment (look at PP)
         // driverController.x().onTrue(new DriveToNoteCommand());
 
-        // TODO 1 : Find MAX MODULE SPEED / VELOCITY
-        // TODO 2 : Find MAX ACCEL (for PP)
-        driverController.y().whileTrue(TunerConstants.DriveTrain.run(
-            () -> TunerConstants.DriveTrain.applyRequest(
-                () -> new SwerveRequest.SysIdSwerveTranslation()
-                    .withVolts(Units.Volts.of(12))
-            )
-        ));
+        Command testTranslational1 = new Command() {
+            private SlewRateLimiter limiter = new SlewRateLimiter(1);
+            public void initialize() {
+                limiter.reset(TunerConstants.DriveTrain.getModule(0).getDriveMotor().getMotorVoltage().getValueAsDouble());
+            }
+            public void execute() {
+                double voltage = limiter.calculate(12);
+                TunerConstants.DriveTrain.applyRequest(
+                    () -> new SwerveRequest.SysIdSwerveTranslation().withVolts(Units.Volts.of(voltage))
+                );
+                System.out.println("Voltage : " + voltage);
+            }
+        };
+        testTranslational1.addRequirements(TunerConstants.DriveTrain);
+        Command testTranslational2 = new Command() {
+            private SlewRateLimiter limiter = new SlewRateLimiter(4);
+            public void initialize() {
+                limiter.reset(TunerConstants.DriveTrain.getModule(0).getDriveMotor().getMotorVoltage().getValueAsDouble());
+            }
+            public void execute() {
+                double voltage = limiter.calculate(0);
+                TunerConstants.DriveTrain.applyRequest(
+                    () -> new SwerveRequest.SysIdSwerveTranslation().withVolts(Units.Volts.of(voltage))
+                );
+                System.out.println("Voltage : " + voltage);
+            }
+            public boolean isFinished() {
+                return TunerConstants.DriveTrain.getModule(0).getDriveMotor().getMotorVoltage().getValueAsDouble() == 0;
+            }
+        };
+        testTranslational2.addRequirements(TunerConstants.DriveTrain);
+        Command testRotational1 = new Command() {
+            private SlewRateLimiter limiter = new SlewRateLimiter(1);
+            public void initialize() {
+                limiter.reset(TunerConstants.DriveTrain.getModule(0).getDriveMotor().getMotorVoltage().getValueAsDouble());
+            }
+            public void execute() {
+                double voltage = limiter.calculate(12);
+                TunerConstants.DriveTrain.applyRequest(
+                    () -> new SwerveRequest.SysIdSwerveRotation().withVolts(Units.Volts.of(voltage))
+                );
+                System.out.println("Voltage : " + voltage);
+            }
+        };
+        testRotational1.addRequirements(TunerConstants.DriveTrain);
+        Command testRotational2 = new Command() {
+            private SlewRateLimiter limiter = new SlewRateLimiter(4);
+            public void initialize() {
+                limiter.reset(TunerConstants.DriveTrain.getModule(0).getDriveMotor().getMotorVoltage().getValueAsDouble());
+            }
+            public void execute() {
+                double voltage = limiter.calculate(0);
+                TunerConstants.DriveTrain.applyRequest(
+                    () -> new SwerveRequest.SysIdSwerveRotation().withVolts(Units.Volts.of(voltage))
+                );
+                System.out.println("Voltage : " + voltage);
+            }
+            public boolean isFinished() {
+                return TunerConstants.DriveTrain.getModule(0).getDriveMotor().getMotorVoltage().getValueAsDouble() == 0;
+            }
+        };
+        testRotational2.addRequirements(TunerConstants.DriveTrain);
 
-        // TODO 5 : Global Max Angular Velocity in PP = FIND
-        // TODO 3 : Find MAX ROT ACCEL (for PP)
-        driverController.x().whileTrue(TunerConstants.DriveTrain.run(
-            () -> TunerConstants.DriveTrain.applyRequest(
-                () -> new SwerveRequest.SysIdSwerveRotation()
-                    .withVolts(Units.Volts.of(12))
+        // TODO 1 : Find MAX MODULE SPEED / VELOCITY
+        /*
+            A. TunerConstants.kSpeedAt12VoltsMps
+            B. PP (Max Module Speed)
+            C. PP (Max Velocity) is 0.5 m/s less than this value
+        */
+
+        driverController.y()
+            .onTrue(testTranslational1)
+            .onFalse(testTranslational2);
+
+        // TODO 2 : Find MAX ACCEL (for PP)
+        /*
+        driverController.y().whileTrue(
+            TunerConstants.DriveTrain.runEnd(
+                () -> TunerConstants.DriveTrain.applyRequest(
+                    () -> new SwerveRequest.SysIdSwerveTranslation().withVolts(Units.Volts.of(00000000000000000))
+                ),
+                () -> TunerConstants.DriveTrain.applyRequest(
+                    () -> new SwerveRequest.SysIdSwerveTranslation().withVolts(Units.Volts.of(0))
+                )
             )
-        ));
+        );
+        */
+
+        // TODO 3 : Find MAX ROT SPEED (for PP)
+        driverController.x()
+            .onTrue(testRotational1)
+            .onFalse(testRotational2);
+        
+        // TODO 4 : Find MAX ROT ACCEL (for PP)
+        /*
+        driverController.x().whileTrue(
+            TunerConstants.DriveTrain.runEnd(
+                () -> TunerConstants.DriveTrain.applyRequest(
+                    () -> new SwerveRequest.SysIdSwerveRotation().withVolts(Units.Volts.of(00000000000000000))
+                ),
+                () -> TunerConstants.DriveTrain.applyRequest(
+                    () -> new SwerveRequest.SysIdSwerveRotation().withVolts(Units.Volts.of(0))
+                )
+            )
+        );
+        */
     }
 
     /** Configures the button bindings of the driver controller */

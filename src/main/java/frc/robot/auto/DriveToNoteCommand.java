@@ -70,7 +70,7 @@ public class DriveToNoteCommand extends Command {
         
         double distance = this.notePose.getTranslation().getDistance(average);
 
-        // TODO 2.1 : Test driving to a note from as far as possible
+        // TODO LATER : Test driving to a note from as far as possible
         System.out.println(distance);
 
         // Make sure it's still targetting the same note (10 cm error allowed),

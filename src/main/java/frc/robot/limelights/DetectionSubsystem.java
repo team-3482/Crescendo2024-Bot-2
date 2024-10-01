@@ -138,7 +138,7 @@ public class DetectionSubsystem extends SubsystemBase {
                     notePosesList.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
                 }
                 else {
-                    // TODO 2.4 : See how bad pathfinding to these innacurate notes is
+                    // TODO LATER : See how bad pathfinding to these innacurate notes is
                     // notePosesList.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
                     notePosesList.add(TunerConstants.DriveTrain.getState().Pose);
                     // notePosesList.add(getNotePose(getDistanceFromPitch(data.ty), data.tx));
