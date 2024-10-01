@@ -29,6 +29,7 @@ import frc.robot.intake.IntakeCommand;
 import frc.robot.pivot.ManuallyPivotCommand;
 import frc.robot.pivot.PivotSubsystem;
 import frc.robot.pivot.ResetAtHardstopCommand;
+import frc.robot.shooter.ShooterSubsystem;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
@@ -191,7 +192,9 @@ public class RobotContainer {
     private void initializeSubsystems() {      
         VisionSubsystem.getInstance();
 
+        // IntakeSubsystem.getInstance();
         PivotSubsystem.getInstance();
+        ShooterSubsystem.getInstance();
     }
 
     /** Register all NamedCommands for PathPlanner use */

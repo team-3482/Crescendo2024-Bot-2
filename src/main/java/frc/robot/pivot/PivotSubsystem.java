@@ -4,6 +4,8 @@
 
 package frc.robot.pivot;
 
+import java.util.Map;
+
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
@@ -19,7 +21,11 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.PhysicalConstants.PivotConstants;
 import frc.robot.constants.PhysicalConstants.RobotConstants;
 import frc.robot.constants.PhysicalConstants.PivotConstants.PivotSlot0Gains;
@@ -47,6 +53,12 @@ public class PivotSubsystem extends SubsystemBase {
     private TalonFX rightPivotMotor = new TalonFX(PivotConstants.RIGHT_PIVOT_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
     private MotionMagicVoltage motionMagicVoltage = new MotionMagicVoltage(0);
 
+    private GenericEntry shuffleboardPositionWidget = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+            .add("Pivot Position", 0)
+            .withWidget(BuiltInWidgets.kDial)
+            .withProperties(Map.of("Min", 0, "Max", 180, "Show Value", true))
+            .getEntry();
+
     /** Creates a new PivotSubsystem. */
     private PivotSubsystem() {
         super("PivotSubsystem");
@@ -60,11 +72,11 @@ public class PivotSubsystem extends SubsystemBase {
         // Right motor used for all PivotSubsystem control (get/set position)
         this.leftPivotMotor.setControl(new Follower(PivotConstants.RIGHT_PIVOT_MOTOR_ID, true));
     }
-
+    
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
-        System.out.printf("Position : %f deg%n", getPosition());
+        this.shuffleboardPositionWidget.setDouble(getPosition());
     }
 
     /**
