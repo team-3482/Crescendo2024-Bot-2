@@ -26,7 +26,7 @@ import frc.robot.swerve.TunerConstants;
 public class DriveToNoteCommand extends Command {
     private Command pathingCommand;
     private final PathConstraints constraints = new PathConstraints(
-        4.45, 1,
+        4.45, 1, // TODO LATER : Do not use these values haha
         Units.degreesToRadians(270), Units.degreesToRadians(180)
     );
     private boolean finished;

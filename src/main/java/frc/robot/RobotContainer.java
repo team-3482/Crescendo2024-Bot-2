@@ -94,13 +94,21 @@ public class RobotContainer {
     private void configureDrivetrain() {
         final CommandSwerveDrivetrain drivetrain = TunerConstants.DriveTrain;
         final double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps; // kSpeedAt12VoltsMps desired top speed
-        final double MaxAngularRate = 1.5 * Math.PI; // 3/4 of a rotation per second max angular velocity
+        final double MaxAngularRate = TunerConstants.kAngularSpeedAt12VoltsRadps; // 3/4 of a rotation per second max angular velocity
         final double limitedMaxSpeed = MaxSpeed * 0.5;
         final double limitedMaxAngularRate = MaxAngularRate * 0.5;
 
         final SwerveRequest.FieldCentric fieldCentricDrive_withDeadband = new SwerveRequest.FieldCentric()
             .withDeadband(limitedMaxSpeed * ControllerConstants.DEADBAND)
             .withRotationalDeadband(limitedMaxAngularRate * ControllerConstants.DEADBAND) // Add a deadband
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+        // TODO LATER : Toggle note facing assist for intaking ?
+        /*
+         * Toggle intake mode, will run intake motors when close to a note ?
+         */
+        final SwerveRequest.FieldCentricFacingAngle fieldCentricFacingAngle_withDeadband = new SwerveRequest.FieldCentricFacingAngle()
+            .withDeadband(limitedMaxSpeed * ControllerConstants.DEADBAND)
+            .withRotationalDeadband(limitedMaxAngularRate * ControllerConstants.DEADBAND)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
         final Telemetry logger = new Telemetry(MaxSpeed);
@@ -329,7 +337,6 @@ public class RobotContainer {
             B. PP (Max Module Speed)
             C. PP (Max Velocity) is 0.5 m/s less than this value
         */
-
         driverController.y()
             .onTrue(testTranslational1)
             .onFalse(testTranslational2);
@@ -348,7 +355,11 @@ public class RobotContainer {
         );
         */
 
-        // TODO 3 : Find MAX ROT SPEED (for PP)
+        // TODO 3 : Find MAX ROT SPEED
+        /*
+            A. TunerConstants.kAngularSpeedAt12VoltsRadps
+            B. PP (Max Angular Velocity)
+        */
         driverController.x()
             .onTrue(testRotational1)
             .onFalse(testRotational2);

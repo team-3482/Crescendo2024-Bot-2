@@ -38,10 +38,13 @@ public class TunerConstants {
     // The stator current at which the wheels start to slip;
     // This needs to be tuned to your individual robot
     private static final double kSlipCurrentA = 120; // 300 was default
-
+    
     // Theoretical free speed (m/s) at 12v applied output;
     // This needs to be tuned to your individual robot
-    public static final double kSpeedAt12VoltsMps = 4.45; // 4.73 by default
+    public static final double kSpeedAt12VoltsMps = 4.73; // Max Module Speed in PP
+    // Theoretical free speed (rad/s) at 12v applied output;
+    // This variable is NOT part of Phoenix swerve code - Alexis
+    public static final double kAngularSpeedAt12VoltsRadps = 1.5 * Math.PI; // Global Max Angular Velocity in PP
 
     // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
     // This may need to be tuned to your individual robot
