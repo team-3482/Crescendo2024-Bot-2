@@ -68,8 +68,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
             this::getCurrentRobotChassisSpeeds,
             (speeds) -> this.setControl(AutoRequest.withSpeeds(speeds)), // Consumer of ChassisSpeeds to drive the robot
             new HolonomicPathFollowerConfig(
-                new PIDConstants(1, 0, 0), // TODO 5 : Translation Test
-                new PIDConstants(0, 0, 0), // TODO 6 : Rotation Test 1 & 2
+                new PIDConstants(14, 0, 0.1),
+                new PIDConstants(10, 0, 0.1),
                 TunerConstants.kSpeedAt12VoltsMps,
                 driveBaseRadius,
                 new ReplanningConfig()
@@ -121,14 +121,5 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
                 hasAppliedOperatorPerspective = true;
             });
         }
-
-        ChassisSpeeds speeds = getCurrentRobotChassisSpeeds();
-        double v = Math.sqrt(Math.pow(speeds.vxMetersPerSecond, 2) + Math.pow(speeds.vyMetersPerSecond, 2));
-        maxTestedV = v > maxTestedV ? v : maxTestedV;
-        maxTestedRot = speeds.omegaRadiansPerSecond > maxTestedRot ? speeds.omegaRadiansPerSecond : maxTestedRot;
-        System.out.printf("Max velocity : %f m/s ; Max rot : %f rad/s%n", maxTestedV, maxTestedRot);
     }
-
-    private double maxTestedV = 0;
-    private double maxTestedRot = 0;
 }
