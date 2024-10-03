@@ -47,7 +47,8 @@ public final class PhysicalConstants {
     public static final class IntakeConstants {
         public static final int LEFT_INTAKE_MOTOR_ID = 20;
         public static final int RIGHT_INTAKE_MOTOR_ID = 21;
-        
+        public static final int BEAM_BREAK_CHANNEL = 0;
+
         public static final double INTAKE_SPEED = 0.6;
     }
 
