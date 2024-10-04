@@ -61,7 +61,8 @@ public class Robot extends LoggedRobot {
             Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))); // Save outputs to a new log
         }
     
-        Logger.start();
+        // TODO LOGGING : This is spamming the console "DataLog no file found"
+        // Logger.start();
 
         // Initialize RobotContainer and all subsystems
         RobotContainer.getInstance();
