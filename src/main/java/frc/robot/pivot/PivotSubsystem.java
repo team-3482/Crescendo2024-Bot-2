@@ -63,11 +63,13 @@ public class PivotSubsystem extends SubsystemBase {
         .add("Pivot Position Dial", 0)
         .withWidget(BuiltInWidgets.kDial)
         .withProperties(Map.of("Min", 0, "Max", 180, "Show Value", true))
+        .withSize(2, 2)
         .withPosition(0, 0)
         .getEntry();
     private GenericEntry shuffleboardPositionWidget = shuffleboardLayout
         .add("Pivot Position Float", 0)
         .withWidget(BuiltInWidgets.kTextView)
+        .withSize(2, 1)
         .withPosition(0, 1)
         .getEntry();
 

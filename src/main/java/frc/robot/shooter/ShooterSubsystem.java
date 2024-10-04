@@ -54,7 +54,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private final ShuffleboardLayout shuffleboardLayout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
         .getLayout("ShooterSubsystem", BuiltInLayouts.kGrid)
-        .withSize(4, 4)
+        .withSize(4, 3)
         .withProperties(Map.of("Number of columns", 1, "Number of rows", 2, "Label position", "TOP"));
     private GenericEntry shuffleboardVelocityBar_TopMotor = shuffleboardLayout
         .add("Top Velocity (rps)", 0)

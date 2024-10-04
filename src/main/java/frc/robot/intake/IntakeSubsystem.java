@@ -4,10 +4,19 @@
 
 package frc.robot.intake;
 
+import java.util.Map;
+
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.hardware.TalonFX;
+
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.PhysicalConstants.IntakeConstants;
 import frc.robot.constants.PhysicalConstants.RobotConstants;
 
@@ -32,8 +41,19 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private TalonFX leftIntakeMotor = new TalonFX(IntakeConstants.LEFT_INTAKE_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
     private TalonFX rightIntakeMotor = new TalonFX(IntakeConstants.RIGHT_INTAKE_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
+    private DigitalInput beamBreakLaser = new DigitalInput(IntakeConstants.BEAM_BREAK_LASER_CHANNEL);
 
-    private DigitalInput beamBreak = new DigitalInput(IntakeConstants.BEAM_BREAK_CHANNEL);
+    private final ShuffleboardLayout shuffleboardLayout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+        .getLayout("IntakeSubsystem", BuiltInLayouts.kGrid)
+        .withSize(2, 2)
+        .withProperties(Map.of("Number of columns", 1, "Number of rows", 1, "Label position", "TOP"));
+    private GenericEntry shuffleboardLaserBoolean = shuffleboardLayout
+        .add("Note", false)
+        .withWidget(BuiltInWidgets.kBooleanBox)
+        .withProperties(Map.of("colorWhenFalse", "black", "colorWhenTrue", "#ff7f00"))
+        .withPosition(0, 0)
+        .withSize(2, 2)
+        .getEntry();
 
     /** Creates a new IntakeSubsystem. */
     private IntakeSubsystem() {
@@ -44,7 +64,9 @@ public class IntakeSubsystem extends SubsystemBase {
 
     // This method will be called once per scheduler run
     @Override
-    public void periodic() { }
+    public void periodic() {
+        this.shuffleboardLaserBoolean.setBoolean(hasNote());
+    }
 
     /**
      * Set the speed of the intake motors.
@@ -55,10 +77,10 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     /** 
-     * Checks whether there is a note in the Intake.
+     * Checks whether there is a note in the intake.
      * @return Whether the laser beam is broken.
      */
     public boolean hasNote() {
-        return beamBreak.get();
+        return !beamBreakLaser.get();
     }
 }

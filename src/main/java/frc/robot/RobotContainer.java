@@ -64,7 +64,8 @@ public class RobotContainer {
     private final SendableChooser<PositionInitialization> positionChooser = new SendableChooser<PositionInitialization>();
     private final ShuffleboardLayout layout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
         .getLayout("SwerveSubsystem", BuiltInLayouts.kList)
-        .withSize(2, 4);
+        .withSize(2, 3)
+        .withProperties(Map.of("Number of columns", 1, "Number of rows", 2, "Label position", "TOP"));
 
     // Instance of the controllers used to drive the robot
     private CommandXboxController driverController;
@@ -181,13 +182,15 @@ public class RobotContainer {
         );
 
         this.layout.add("Starting Position", this.positionChooser)
-            .withWidget(BuiltInWidgets.kComboBoxChooser);
+            .withWidget(BuiltInWidgets.kComboBoxChooser)
+            .withPosition(0, 0);
         // Re-set chosen position.
         this.layout.add("Set Starting Position",
             Commands.runOnce(
                 () -> drivetrain.seedFieldRelative(Positions.getStartingPose(this.positionChooser.getSelected()))
             ).ignoringDisable(true).withName("Set Again"))
-            .withWidget(BuiltInWidgets.kCommand);
+            .withWidget(BuiltInWidgets.kCommand)
+            .withPosition(0, 1);
     }
 
     /** Creates instances of each subsystem so periodic runs */
