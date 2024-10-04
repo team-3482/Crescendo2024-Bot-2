@@ -19,6 +19,7 @@ import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
@@ -135,12 +136,16 @@ public class IntakeSubsystem extends SubsystemBase {
 
     /**
      * Aims for a velocity using MotionMagicVelocity.
-     * @param speed - In rotations/sec.
+     * @param velocity - In rotations/sec.
+     * @apiNote This value is clamped by {@link IntakeConstants#CRUISE_SPEED}.
+     * That is the maximum speed of the subsystem.
      */
-    public void motionMagicVelocity(double speed) {
+    public void motionMagicVelocity(double velocity) {
+        velocity = MathUtil.clamp(velocity, -IntakeConstants.CRUISE_SPEED, IntakeConstants.CRUISE_SPEED);
+        
         MotionMagicVelocityVoltage control = motionMagicVelocityVoltage
             .withSlot(0)
-            .withVelocity(speed);
+            .withVelocity(velocity);
         
         this.rightIntakeMotor.setControl(control);
     }

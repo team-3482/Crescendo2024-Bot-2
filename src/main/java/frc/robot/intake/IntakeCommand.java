@@ -5,19 +5,21 @@
 package frc.robot.intake;
 
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.constants.PhysicalConstants.IntakeConstants;
 
 /** Runs the intake for a Note. */
 public class IntakeCommand extends Command {
-    private double speed;
+    private double velocity;
 
     /**
      * Creates a new IntakeCommand.
-     * @param speed - The speed at which the intake motors should run.
+     * @param velocity - The speed at which the intake should run in rot/s.
+     * @apiNote This value is clamped by {@link IntakeConstants#CRUISE_SPEED}.
      */
-    public IntakeCommand(double speed) {
+    public IntakeCommand(double velocity) {
         setName("IntakeCommand");
 
-        this.speed = speed;
+        this.velocity = velocity;
         
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(IntakeSubsystem.getInstance());
@@ -26,7 +28,7 @@ public class IntakeCommand extends Command {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        IntakeSubsystem.getInstance().setSpeed(this.speed);
+        IntakeSubsystem.getInstance().motionMagicVelocity(this.velocity);
     }
 
     // Called every time the scheduler runs while the command is scheduled.
@@ -42,6 +44,6 @@ public class IntakeCommand extends Command {
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return false; // TODO LATER : Stopping logic with laser
+        return IntakeSubsystem.getInstance().hasNote();
     }
 }

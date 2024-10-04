@@ -19,7 +19,8 @@ public class ShootCommand extends Command {
 
     /**
      * Creates a new ShootCommand.
-     * @param velocity - The speed at which the shooting motors should run in rotations/sec.
+     * @param velocity - The speed at which the rollers should run in rot/s.
+     * @apiNote This value is clamped by {@link ShooterConstants#CRUISE_SPEED}.
      */
     public ShootCommand(double velocity) {
         setName("ShootCommand");
@@ -62,7 +63,7 @@ public class ShootCommand extends Command {
         }
 
         if (this.atVelocity) {
-            IntakeSubsystem.getInstance().setSpeed(IntakeConstants.IDEAL_INTAKE_VELOCITY);
+            IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_INTAKE_VELOCITY);
             this.timer.start();
         }
     }
