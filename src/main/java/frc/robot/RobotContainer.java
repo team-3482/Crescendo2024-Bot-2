@@ -62,7 +62,9 @@ public class RobotContainer {
     private final SendableChooser<Command> autoChooser;
     // Position chooser
     private final SendableChooser<PositionInitialization> positionChooser = new SendableChooser<PositionInitialization>();
-    private final ShuffleboardLayout layout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT).getLayout("SwerveSubsystem", BuiltInLayouts.kList);
+    private final ShuffleboardLayout layout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+        .getLayout("SwerveSubsystem", BuiltInLayouts.kList)
+        .withSize(2, 4);
 
     // Instance of the controllers used to drive the robot
     private CommandXboxController driverController;
@@ -227,19 +229,24 @@ public class RobotContainer {
         ));
         operatorController.a().onTrue(new ResetAtHardstopCommand(true));
 
-        operatorController.pov(180)
+        operatorController.pov(0)
             .whileTrue(PivotSubsystem.getInstance().run(
                 () -> PivotSubsystem.getInstance().motionMagicPosition(90)
             ));
-        operatorController.pov(0)
+        operatorController.pov(180)
             .whileTrue(PivotSubsystem.getInstance().run(
                 () -> PivotSubsystem.getInstance().motionMagicPosition(5)
             ));
         
-        // TODO SHOOTER (2) : MotionMagicVelocity
-        operatorController.pov(90)
+        operatorController.pov(270)
             .whileTrue(PivotSubsystem.getInstance().run(
-                () -> ShooterSubsystem.getInstance().motionMagicVelocity(1)
+                () -> PivotSubsystem.getInstance().motionMagicPosition(55)
+            ));
+        
+        operatorController.pov(90)
+            .whileTrue(PivotSubsystem.getInstance().runEnd(
+                () -> ShooterSubsystem.getInstance().motionMagicVelocity(30),
+                () -> ShooterSubsystem.getInstance().setSpeed(0)
             ));
         
         operatorController.x().whileTrue(new IntakeCommand(IntakeConstants.INTAKE_SPEED));

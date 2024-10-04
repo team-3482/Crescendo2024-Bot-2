@@ -60,30 +60,30 @@ public final class PhysicalConstants {
         /** This is the gear ratio from the sensor to the rollers. */
         public static final double ROTOR_TO_MECHANISM_RATIO = (double) 25 / 9; // 50:18
 
-        // TODO SHOOTER (2.?) : Reasonable Velocity Tolerance
         /** Tolerance for Commands using MotionMagic in rot/s. */
-        public static final double VELOCITY_TOLERANCE = 0;
+        public static final double VELOCITY_TOLERANCE = 0.35;
 
-        // TODO SHOOTER (2.2) : Tune MotionMagic
-        /** Gains used for MotionMagic slot 0. */
+        /** Gains used for MotionMagic slot 0 of the bottom motor. */
         public static final class ShooterSlot0Gains {
             public static final double kG = 0;
-            public static final double kS = 0;
-            public static final double kV = 0;
+            public static final double kS_BottomMotor = 0.25;
+            public static final double kS_TopMotor = 0.4;
+            public static final double kV = 0.33;
             public static final double kA = 0;
-            public static final double kP = 0;
+            public static final double kP = 1.3;
             public static final double kI = 0;
             public static final double kD = 0;
         }
 
-        // TODO SHOOTER (2.1) : FIND MAX ACCEL / JERK
         /* More constants used with MotionMagic. */
-        /** Max mechanism rotations per second. */
-        public static final double CRUISE_SPEED = 0; // 0 = no max speed
+        /**
+         * Max mechanism rotations per second.
+         * This value is not used for MotionMagicVelocity.
+         * It is only here as a reminder.
+         */
+        public static final double CRUISE_SPEED = 30;
         /** Max mechanism rotations per second^2 */
-        public static final double ACCELERATION = 0;
-        /** Max mechanism rotations per second^3 */
-        public static final double JERK = 0;
+        public static final double ACCELERATION = 100;
     }
 
     /** Constants for the PivotSubsystem. */
@@ -93,8 +93,10 @@ public final class PhysicalConstants {
 
         /** Upper soft stop angle in degrees. */
         public static final double UPPER_ANGLE_LIMIT = 90;
+        /** Any angle below this would shoot a note into the back Limelight. */
+        public static final double ABOVE_LIMELIGHT_ANGLE = 6;
         /** Lower soft stop angle in degrees. */
-        public static final double LOWER_ANGLE_LIMIT = 2.796678; // Hard stop
+        public static final double LOWER_HARD_STOP = 2.796678; // Hard stop
         
         /** This is the gear ratio from the sensor to the pivot. */
         public static final double ROTOR_TO_MECHANISM_RATIO = 100; // 5:1 -> 2:1 -> 10 : 1 = 100:1

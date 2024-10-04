@@ -17,14 +17,15 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.MotionMagicIsRunningValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.PhysicalConstants.PivotConstants;
@@ -54,11 +55,21 @@ public class PivotSubsystem extends SubsystemBase {
     private TalonFX rightPivotMotor = new TalonFX(PivotConstants.RIGHT_PIVOT_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
     private MotionMagicVoltage motionMagicVoltage = new MotionMagicVoltage(0);
 
-    private GenericEntry shuffleboardPositionWidget = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
-            .add("Pivot Position", 0)
-            .withWidget(BuiltInWidgets.kDial)
-            .withProperties(Map.of("Min", 0, "Max", 180, "Show Value", true))
-            .getEntry();
+    private final ShuffleboardLayout shuffleboardLayout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+        .getLayout("PivotSubsystem", BuiltInLayouts.kGrid)
+        .withSize(2, 4)
+        .withProperties(Map.of("Number of columns", 1, "Number of rows", 2, "Label position", "TOP"));
+    private GenericEntry shuffleboardPositionDial = shuffleboardLayout
+        .add("Pivot Position Dial", 0)
+        .withWidget(BuiltInWidgets.kDial)
+        .withProperties(Map.of("Min", 0, "Max", 180, "Show Value", true))
+        .withPosition(0, 0)
+        .getEntry();
+    private GenericEntry shuffleboardPositionWidget = shuffleboardLayout
+        .add("Pivot Position Float", 0)
+        .withWidget(BuiltInWidgets.kTextView)
+        .withPosition(0, 1)
+        .getEntry();
 
     /** Creates a new PivotSubsystem. */
     private PivotSubsystem() {
@@ -70,7 +81,6 @@ public class PivotSubsystem extends SubsystemBase {
         // 20 ms update frequency (1 robot cycle)
         this.rightPivotMotor.getPosition().setUpdateFrequency(50);
         this.rightPivotMotor.getVelocity().setUpdateFrequency(50);
-        this.rightPivotMotor.getMotionMagicIsRunning().setUpdateFrequency(50);
         // Right motor used for all PivotSubsystem control (get/set position)
         this.leftPivotMotor.setControl(new Follower(PivotConstants.RIGHT_PIVOT_MOTOR_ID, true));
     }
@@ -78,7 +88,9 @@ public class PivotSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
-        this.shuffleboardPositionWidget.setDouble(getPosition());
+        double position = getPosition();
+        this.shuffleboardPositionDial.setInteger((int) (position + 0.5));
+        this.shuffleboardPositionWidget.setDouble(position);
     }
 
     /**
@@ -127,7 +139,7 @@ public class PivotSubsystem extends SubsystemBase {
      * @apiNote The position is clamped by the soft limits in {@link PivotConstants}.
      */
     public void motionMagicPosition(double position) {
-        position = MathUtil.clamp(position, PivotConstants.LOWER_ANGLE_LIMIT, PivotConstants.UPPER_ANGLE_LIMIT);
+        position = MathUtil.clamp(position, PivotConstants.LOWER_HARD_STOP, PivotConstants.UPPER_ANGLE_LIMIT);
 
         MotionMagicVoltage control = motionMagicVoltage
             .withSlot(0)
@@ -145,7 +157,7 @@ public class PivotSubsystem extends SubsystemBase {
         if (safe && speed != 0) {
             double position = getPosition();
             if ((speed > 0 && position >= PivotConstants.UPPER_ANGLE_LIMIT)
-                || (speed < 0 && position <= PivotConstants.LOWER_ANGLE_LIMIT)) {
+                || (speed < 0 && position <= PivotConstants.LOWER_HARD_STOP)) {
                     speed = 0;
                 }
         }
@@ -174,10 +186,10 @@ public class PivotSubsystem extends SubsystemBase {
 
     /**
      * Sets the mechanism position of both motors to the lower hard stop.
-     * @apiNote See hard stop at {@link PivotConstants#LOWER_ANGLE_LIMIT}
+     * @apiNote See hard stop at {@link PivotConstants#LOWER_HARD_STOP}
      */
     public void setPositionHardStop() {
-        setPosition(PivotConstants.LOWER_ANGLE_LIMIT);
+        setPosition(PivotConstants.LOWER_HARD_STOP);
     }
 
     /**
@@ -194,13 +206,5 @@ public class PivotSubsystem extends SubsystemBase {
      */
     public double getVelocity() {
         return Units.rotationsToDegrees(this.rightPivotMotor.getVelocity().getValueAsDouble());
-    }
-
-    /**
-     * Checks if MotionMagic is enabled on the right motor.
-     * @return Whether or not MotionMagic is running.
-     */
-    public boolean motionMagicIsRunning() {
-        return this.rightPivotMotor.getMotionMagicIsRunning().getValue() == MotionMagicIsRunningValue.Enabled;
     }
 }

@@ -75,7 +75,7 @@ public class ResetAtHardstopCommand extends Command {
         this.timer.stop();
 
         if (!interrupted) { // If interrupted, assume it probably isn't at the hard stop
-            double difference = PivotConstants.LOWER_ANGLE_LIMIT - PivotSubsystem.getInstance().getPosition();
+            double difference = PivotConstants.LOWER_HARD_STOP - PivotSubsystem.getInstance().getPosition();
             if (!nearCurrentStop || Math.abs(difference) <= 3) {
                 PivotSubsystem.getInstance().setPositionHardStop();
             }
