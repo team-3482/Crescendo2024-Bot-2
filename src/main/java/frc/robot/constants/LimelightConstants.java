@@ -79,6 +79,8 @@ public final class LimelightConstants {
 
         /** The width of the screen in pixels, based on resolution. */
         public static final int SCREEN_WIDTH = 1280;
+        /** The hieght of the screen in pixels, based on resolution. */
+        public static final int SCREEN_HEIGHT = 960;
 
         /**
          * A formula that attempts to account for the detection error of far-away notes. 

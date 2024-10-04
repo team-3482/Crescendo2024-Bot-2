@@ -16,33 +16,53 @@ public class DetectionData {
 
     /** If the bounding box is too close to the edge of the screen, it may not be the full note. */
     public final boolean canTrustWidth;
+    /** If the bounding box is too close to the edge of the screen, it may not be the full note. */
+    public final boolean canTrustPitch;
     public final boolean canTrustData;
 
     /**
      * Creates a new DetectionData object.
+     * @apiNote If data cannot be trusted (see {@link DetectionData#canTrustData()}),
+     * all booleans will be false and all doubles will be 0.
      */
-    public DetectionData(double tx, double ty, double[] xCorners, double timestamp) {
-        this.tx = tx;
-        this.ty = ty;
-        this.width = ((xCorners[1] - xCorners[0]) + (xCorners[2] - xCorners[3])) / 2;
-        this.timestamp = timestamp;
-
-        // These are calculated when the measurement is created
-        this.canTrustWidth = canTrustWidth(xCorners);
+    public DetectionData(double tx, double ty, double[] xCorners, double[] yCorners, double timestamp) {
         this.canTrustData = canTrustData();
+        
+        if (!this.canTrustData) {
+            this.tx = this.ty = this.width = this.timestamp = 0;
+            this.canTrustPitch = this.canTrustWidth = false;
+        }
+        else {
+            this.tx = tx;
+            this.ty = ty;
+            this.width = xCorners[1] - xCorners[0]; // Top right - Top left
+            this.timestamp = timestamp;
+    
+            // These are calculated when the measurement is created
+            this.canTrustWidth = canTrustWidth(xCorners);
+            this.canTrustPitch = canTrustPitch(yCorners);
+        }
     }
 
     /**
      * Checks that the corners of the bounding box are not close to then edge of the screen.
-     * @param xCorners - The corners to use. TL, TR, BR, BL.
+     * @param xCorners - The corners to use. [ TL, TR ].
      * @return If the full width is within the screen.
      * @apiNote Within 35 px of the edges.
      */
     private boolean canTrustWidth(double[] xCorners) {
         return xCorners[0] - 35 > 0
-            && xCorners[3] - 35 > 0
-            && xCorners[1] + 35 < DetectionConstants.SCREEN_WIDTH
-            && xCorners[2] + 35 < DetectionConstants.SCREEN_WIDTH;
+            && xCorners[1] + 35 < DetectionConstants.SCREEN_WIDTH;
+    }
+    /**
+     * Checks that the corners of the bounding box are not close to then edge of the screen.
+     * @param yCorners - The corners to use. [ TL, BL ].
+     * @return If the full height is within the screen.
+     * @apiNote Within 35 px of the edges.
+     */
+    private boolean canTrustPitch(double[] yCorners) {
+        return yCorners[0] + 35 < DetectionConstants.SCREEN_HEIGHT
+            && yCorners[1] - 35 > 0;
     }
 
     /**

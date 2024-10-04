@@ -137,14 +137,17 @@ public class DetectionSubsystem extends SubsystemBase {
                 double distance;
                 
                 if (data.canTrustWidth) {
-                    distance = getDistanceFromWidth(data.width);
+                    distance = getDistanceFromWidth(data.width, data.tx);
                 }
-                else {
+                else if (data.canTrustPitch) {
                     // TODO : Test the viability of distance from pitch
                     distance = getDistanceFromPitch(data.ty);
                 }
-
-                if (distance <= DetectionConstants.MAX_NOTE_DISTANCE ) {
+                else {
+                    continue;
+                }
+                
+                if (distance <= DetectionConstants.MAX_NOTE_DISTANCE) {
                     notePosesList.add(getNotePose(distance, data.tx));
                 }
             }
@@ -178,11 +181,14 @@ public class DetectionSubsystem extends SubsystemBase {
             double[] xCorners = new double[]{
                 rawDetections[i + 4], // Top left
                 rawDetections[i + 6], // Top right
-                rawDetections[i + 8], // Bottom right
-                rawDetections[i + 10] // Borrom left
             };
 
-            detectionDatas.add(new DetectionData(tx, ty, xCorners, adjustedTimestamp));
+            double[] yCorners = new double[]{
+                rawDetections[i + 5], // Top left
+                rawDetections[i + 11], // Bottom left
+            };
+
+            detectionDatas.add(new DetectionData(tx, ty, xCorners, yCorners, adjustedTimestamp));
         }
 
         return detectionDatas.toArray(new DetectionData[detectionDatas.size()]);
@@ -192,10 +198,12 @@ public class DetectionSubsystem extends SubsystemBase {
      * Calculates the distance of a note using its width.
      * This is more trustworthy than the height, because the width varies more.
      * @param noteWidth - The width of the note in pixels.
+     * @param tx - Raw tx from the camera in degrees.
      * @return The distance to the note in meters.
      * @see {@link DetectionConstants#PIXEL_TO_RAD}.
+     * @apiNote This function is mostly heuristic and has about 7 cm error above 0.5 meters.
      */
-    private double getDistanceFromWidth(double noteWidth) {
+    private double getDistanceFromWidth(double noteWidth, double tx) {
         double theta = noteWidth / DetectionConstants.PIXEL_TO_RAD;
         
         double distance = DetectionConstants.NOTE_DIAMETER / Math.tan(theta);
@@ -204,6 +212,8 @@ public class DetectionSubsystem extends SubsystemBase {
         if (distance >= 0.5) {
             distance += DetectionConstants.WIDTH_DIST_ERROR_CORRECTION.apply(distance);
         }
+        
+        distance = Math.abs(distance / Math.cos(Units.degreesToRadians(1.75 * tx)));
         
         return distance;
     }
