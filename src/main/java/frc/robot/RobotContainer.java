@@ -25,7 +25,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
-import frc.robot.intake.IntakeCommand;
+import frc.robot.intake.IntakeSubsystem;
 import frc.robot.pivot.ManuallyPivotCommand;
 import frc.robot.pivot.PivotSubsystem;
 import frc.robot.pivot.ResetAtHardstopCommand;
@@ -36,7 +36,6 @@ import frc.robot.swerve.TunerConstants;
 import frc.robot.vision.VisionSubsystem;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
-import frc.robot.constants.PhysicalConstants.IntakeConstants;
 import frc.robot.constants.Positions;
 
 public class RobotContainer {
@@ -197,7 +196,7 @@ public class RobotContainer {
     private void initializeSubsystems() {      
         VisionSubsystem.getInstance();
 
-        // IntakeSubsystem.getInstance();
+        IntakeSubsystem.getInstance();
         PivotSubsystem.getInstance();
         ShooterSubsystem.getInstance();
     }
@@ -241,19 +240,28 @@ public class RobotContainer {
                 () -> PivotSubsystem.getInstance().motionMagicPosition(5)
             ));
         
+        // Testing shooting
         operatorController.pov(270)
             .whileTrue(PivotSubsystem.getInstance().run(
                 () -> PivotSubsystem.getInstance().motionMagicPosition(55)
             ));
-        
         operatorController.pov(90)
             .whileTrue(PivotSubsystem.getInstance().runEnd(
                 () -> ShooterSubsystem.getInstance().motionMagicVelocity(30),
                 () -> ShooterSubsystem.getInstance().setSpeed(0)
             ));
         
-        operatorController.x().whileTrue(new IntakeCommand(IntakeConstants.INTAKE_SPEED));
-        operatorController.y().whileTrue(new IntakeCommand(-IntakeConstants.INTAKE_SPEED));
+        // Testing intaking
+        operatorController.rightBumper()
+            .whileTrue(IntakeSubsystem.getInstance().runEnd(
+                () -> IntakeSubsystem.getInstance().motionMagicVelocity(10),
+                () -> ShooterSubsystem.getInstance().setSpeed(0)
+            ));
+        operatorController.leftBumper()
+            .whileTrue(IntakeSubsystem.getInstance().runEnd(
+                () -> IntakeSubsystem.getInstance().motionMagicVelocity(-10),
+                () -> ShooterSubsystem.getInstance().setSpeed(0)
+            ));
     }
 
     /**

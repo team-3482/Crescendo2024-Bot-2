@@ -6,8 +6,18 @@ package frc.robot.intake;
 
 import java.util.Map;
 
+import com.ctre.phoenix6.configs.FeedbackConfigs;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
+import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.GravityTypeValue;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -19,6 +29,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.PhysicalConstants.IntakeConstants;
 import frc.robot.constants.PhysicalConstants.RobotConstants;
+import frc.robot.constants.PhysicalConstants.IntakeConstants.IntakeSlot0Gains;
 
 public class IntakeSubsystem extends SubsystemBase {
     // Thread-safe singleton design pattern.
@@ -41,12 +52,21 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private TalonFX leftIntakeMotor = new TalonFX(IntakeConstants.LEFT_INTAKE_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
     private TalonFX rightIntakeMotor = new TalonFX(IntakeConstants.RIGHT_INTAKE_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
+    private MotionMagicVelocityVoltage motionMagicVelocityVoltage = new MotionMagicVelocityVoltage(0);
+    
     private DigitalInput beamBreakLaser = new DigitalInput(IntakeConstants.BEAM_BREAK_LASER_CHANNEL);
 
     private final ShuffleboardLayout shuffleboardLayout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
         .getLayout("IntakeSubsystem", BuiltInLayouts.kGrid)
-        .withSize(2, 2)
+        .withSize(2, 4)
         .withProperties(Map.of("Number of columns", 1, "Number of rows", 1, "Label position", "TOP"));
+    private GenericEntry shuffleboardVelocityBar = shuffleboardLayout
+        .add("Intake Velocity (rps)", 0)
+        .withWidget(BuiltInWidgets.kNumberBar)
+        .withProperties(Map.of("Min", 0, "Max", 50, "Num tick marks", 5))
+        .withSize(2, 2)
+        .withPosition(0, 1)
+        .getEntry();
     private GenericEntry shuffleboardLaserBoolean = shuffleboardLayout
         .add("Note", false)
         .withWidget(BuiltInWidgets.kBooleanBox)
@@ -59,13 +79,70 @@ public class IntakeSubsystem extends SubsystemBase {
     private IntakeSubsystem() {
         super("IntakeSubsystem");
 
-        leftIntakeMotor.setControl(new Follower(IntakeConstants.RIGHT_INTAKE_MOTOR_ID, true));
+        configureMotionMagic();
+
+        // 20 ms update frequency (1 robot cycle)
+        this.rightIntakeMotor.getVelocity().setUpdateFrequency(50);
+
+        this.leftIntakeMotor.setControl(new Follower(IntakeConstants.RIGHT_INTAKE_MOTOR_ID, true));
     }
 
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
+        this.shuffleboardVelocityBar.setDouble(getVelocity());
         this.shuffleboardLaserBoolean.setBoolean(hasNote());
+    }
+
+    /**
+     * A helper method that configures MotionMagic on both motors.
+     */
+    private void configureMotionMagic() {
+        TalonFXConfiguration configuration = new TalonFXConfiguration();
+
+        FeedbackConfigs feedbackConfigs = configuration.Feedback;
+        feedbackConfigs.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
+        // Sets the gear ration from the rotor to the mechanism.
+        // This gear ratio needs to be exact.
+        feedbackConfigs.SensorToMechanismRatio = IntakeConstants.ROTOR_TO_MECHANISM_RATIO; 
+
+        MotorOutputConfigs motorOutputConfigs = configuration.MotorOutput;
+        motorOutputConfigs.NeutralMode = NeutralModeValue.Brake; // Holds notes
+
+        // Set Motion Magic gains in slot 0.
+        Slot0Configs slot0Configs = configuration.Slot0;
+        slot0Configs.GravityType = GravityTypeValue.Elevator_Static;
+        slot0Configs.kG = IntakeSlot0Gains.kG;
+        slot0Configs.kS = IntakeSlot0Gains.kS;
+        slot0Configs.kV = IntakeSlot0Gains.kV;
+        slot0Configs.kA = IntakeSlot0Gains.kA;
+        slot0Configs.kP = IntakeSlot0Gains.kP;
+        slot0Configs.kI = IntakeSlot0Gains.kI;
+        slot0Configs.kD = IntakeSlot0Gains.kD;
+
+        // Set acceleration and cruise velocity.
+        MotionMagicConfigs motionMagicConfigs = configuration.MotionMagic;
+        motionMagicConfigs.MotionMagicCruiseVelocity = IntakeConstants.CRUISE_SPEED;
+        motionMagicConfigs.MotionMagicAcceleration = IntakeConstants.ACCELERATION;
+
+        // Motor-specific configurations.
+        motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive; // Bottom motor inverted.
+        this.rightIntakeMotor.getConfigurator().apply(configuration);
+
+        motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive; // Top motor not inverted.
+        this.leftIntakeMotor.getConfigurator().apply(configuration);
+    }
+
+    /**
+     * Aims for a velocity using MotionMagicVelocity.
+     * @param speed - In rotations/sec.
+     */
+    public void motionMagicVelocity(double speed) {
+        MotionMagicVelocityVoltage control = motionMagicVelocityVoltage
+            .withSlot(0)
+            .withVelocity(speed);
+        
+        this.rightIntakeMotor.setControl(control);
     }
 
     /**
@@ -73,7 +150,15 @@ public class IntakeSubsystem extends SubsystemBase {
      * @param speed - Between -1.0 and 1.0.
      */
     public void setSpeed(double speed) {
-        rightIntakeMotor.set(speed);
+        this.rightIntakeMotor.set(speed);
+    }
+
+    /**
+     * Gets the mechanism velocity of the right motor.
+     * @return The velocity in rot/s.
+     */
+    public double getVelocity() {
+        return this.rightIntakeMotor.getVelocity().getValueAsDouble();
     }
 
     /** 
@@ -81,6 +166,6 @@ public class IntakeSubsystem extends SubsystemBase {
      * @return Whether the laser beam is broken.
      */
     public boolean hasNote() {
-        return !beamBreakLaser.get();
+        return !this.beamBreakLaser.get();
     }
 }

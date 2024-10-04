@@ -62,7 +62,7 @@ public class ShootCommand extends Command {
         }
 
         if (this.atVelocity) {
-            IntakeSubsystem.getInstance().setSpeed(IntakeConstants.INTAKE_SPEED);
+            IntakeSubsystem.getInstance().setSpeed(IntakeConstants.IDEAL_INTAKE_VELOCITY);
             this.timer.start();
         }
     }
