@@ -11,12 +11,13 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -77,12 +78,10 @@ public class RobotContainer {
         configureOperatorBindings();
 
         this.autoChooser = AutoBuilder.buildAutoChooser(); // Default auto will be Commands.none()
-        // Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
-        //     .add("Auto Chooser", autoChooser)
-        //     .withWidget(BuiltInWidgets.kComboBoxChooser)
-        //     .withPosition(11, 0)
-        //     .withSize(4, 1);
-        SmartDashboard.putData("Auto Chooser", this.autoChooser);
+        Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+            .add("Auto Chooser", autoChooser)
+            .withWidget(BuiltInWidgets.kComboBoxChooser)
+            .withSize(6, 1);
     }
 
     /**
@@ -254,7 +253,9 @@ public class RobotContainer {
          *    POV (overrides joys) : Directional movement -- 0.25 m/s
          */
         driverController.back().onTrue(
-            TunerConstants.DriveTrain.runOnce(() -> TunerConstants.DriveTrain.seedFieldRelative(new Pose2d()))
+            TunerConstants.DriveTrain.runOnce(() -> TunerConstants.DriveTrain.seedFieldRelative(
+                new Pose2d(new Translation2d(5,6), new Rotation2d())
+            ))
         );
         /*
          * Triggers are also used in configureDrivetrain()

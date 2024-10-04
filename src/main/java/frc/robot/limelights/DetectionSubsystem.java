@@ -134,14 +134,18 @@ public class DetectionSubsystem extends SubsystemBase {
 
         for (DetectionData data : this.recentDetectionDatas) {
             if (data.timestamp >= Timer.getFPGATimestamp() - 5) {
+                double distance;
+                
                 if (data.canTrustWidth) {
-                    notePosesList.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
+                    distance = getDistanceFromWidth(data.width);
                 }
                 else {
-                    // TODO LATER : See how bad pathfinding to these innacurate notes is
-                    // notePosesList.add(getNotePose(getDistanceFromWidth(data.width), data.tx));
-                    notePosesList.add(TunerConstants.DriveTrain.getState().Pose);
-                    // notePosesList.add(getNotePose(getDistanceFromPitch(data.ty), data.tx));
+                    // TODO : Test the viability of distance from pitch
+                    distance = getDistanceFromPitch(data.ty);
+                }
+
+                if (distance <= DetectionConstants.MAX_NOTE_DISTANCE ) {
+                    notePosesList.add(getNotePose(distance, data.tx));
                 }
             }
         }
@@ -196,9 +200,12 @@ public class DetectionSubsystem extends SubsystemBase {
         
         double distance = DetectionConstants.NOTE_DIAMETER / Math.tan(theta);
         distance += DetectionConstants.NOTE_DIAMETER / 2;
-        // Heuristic for adjusting position for better accuracy ;
-        // Takes meter distance and returns inches of adjustment
-        return distance + Units.inchesToMeters(3 * Math.log(distance + 0.25));
+        
+        if (distance >= 0.5) {
+            distance += DetectionConstants.WIDTH_DIST_ERROR_CORRECTION.apply(distance);
+        }
+        
+        return distance;
     }
 
     /**
@@ -208,6 +215,7 @@ public class DetectionSubsystem extends SubsystemBase {
      * @return The distance to the note in meters.
      * @deprecated Very innacurate. Not sure if math issue or LL ty accuracy issue.
      */
+    @Deprecated
     private double getDistanceFromPitch(double ty) {
         double pitch = DetectionConstants.LIMELIGHT_POSITION.getRotation().getY();
         double theta = Math.abs(pitch + Units.degreesToRadians(ty));
@@ -236,11 +244,7 @@ public class DetectionSubsystem extends SubsystemBase {
             over90Deg = true;
         }
 
-        // Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
-        Pose2d botPose = new Pose2d(
-            new Translation2d(),
-            Rotation2d.fromDegrees(0)
-        );
+        Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
         
         Translation2d cameraToNote = new Translation2d(
             distance * Math.sin(theta),
