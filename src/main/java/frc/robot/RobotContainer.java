@@ -31,6 +31,7 @@ import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
+import frc.robot.constants.LimelightConstants.DetectionConstants;
 import frc.robot.auto.DriveToNoteCommand;
 import frc.robot.constants.Positions;
 
@@ -158,7 +159,8 @@ public class RobotContainer {
                 // If no Notes OR Note further than 3 meters, drive normally
                 // TODO 2 : Test no distance limit
                 if (notePoses.length == 0
-                    || notePoses[0].getTranslation().getDistance(botTranslation) >= 3
+                    || notePoses[0].getTranslation().getDistance(botTranslation)
+                        >= DetectionConstants.MAX_NOTE_DISTANCE_DRIVING
                 ) {
                     System.out.println("IntakeSubsystem Enabled (no note)");
                     return fieldCentricDrive_withDeadband

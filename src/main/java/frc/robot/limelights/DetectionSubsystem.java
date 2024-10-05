@@ -19,6 +19,7 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.TimestampedDoubleArray;
+import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
@@ -50,7 +51,10 @@ public class DetectionSubsystem extends SubsystemBase {
         return instance;
     }
 
-    private ArrayList<DetectionData> recentDetectionDatas = new ArrayList<DetectionData>();
+    /** Used to run detection processing on a separate thread. */
+    private final Notifier notifier;
+
+    private volatile ArrayList<DetectionData> recentDetectionDatas = new ArrayList<DetectionData>();
 
     /* What to publish over networktables for telemetry */
     private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
@@ -63,18 +67,18 @@ public class DetectionSubsystem extends SubsystemBase {
     private final ShuffleboardLayout shuffleboardLayout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
         .getLayout("DetectionSubsystem", BuiltInLayouts.kGrid)
         .withProperties(Map.of("Number of columns", 1, "Number of rows", 2, "Label position", "TOP"))
-        .withSize(2, 3);
+        .withSize(3, 3);
     private final GenericEntry widthDistanceEntry = shuffleboardLayout
         .add("Closest Width-D (m)", 0)
         .withWidget(BuiltInWidgets.kNumberBar)
-        .withProperties(Map.of("Min", 0, "Max", DetectionConstants.MAX_NOTE_DISTANCE, "Num tick marks", 2))
+        .withProperties(Map.of("Min", 0, "Max", DetectionConstants.MAX_NOTE_DISTANCE_TRUST, "Num tick marks", 5))
         .withSize(2, 1)
         .withPosition(0, 0)
         .getEntry();
     private final GenericEntry pitchDistanceEntry = shuffleboardLayout
         .add("Closest Pitch-D (m)", 0)
         .withWidget(BuiltInWidgets.kNumberBar)
-        .withProperties(Map.of("Min", 0, "Max", DetectionConstants.MAX_NOTE_DISTANCE, "Num tick marks", 2))
+        .withProperties(Map.of("Min", 0, "Max", DetectionConstants.MAX_NOTE_DISTANCE_TRUST, "Num tick marks", 5))
         .withSize(2, 1)
         .withPosition(0, 1)
         .getEntry();
@@ -95,11 +99,23 @@ public class DetectionSubsystem extends SubsystemBase {
                 .withWidget(BuiltInWidgets.kCameraStream)
                 .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
         }
+
+        this.notifier = new Notifier(() -> notifierLoop());
+        this.notifier.setName("Detection Notifier");
+        // Assuming ~30 fps / ~33 ms cycle.
+        this.notifier.startPeriodic(1.0 / 30);
     }
 
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
+        // Uses a Notifier for separate-thread Vision processing
+    }
+
+    /**
+     * This method is used in conjunction with a Notifier to run detection processing on a separate thread.
+     */
+    private synchronized void notifierLoop() {
         DetectionData[] detectionDatasArray = getDetectionDatas();
         if (detectionDatasArray.length == 0) return;
 
@@ -129,6 +145,9 @@ public class DetectionSubsystem extends SubsystemBase {
         }
 
         this.fieldTypePub.set("Field2d");
+
+        // Update top 3 Notes to Shuffleboard
+
     }
     
     /**
@@ -151,13 +170,13 @@ public class DetectionSubsystem extends SubsystemBase {
      * @apiNote If there is no new data, it uses data up to 5 seconds old.
      * New data always replaces old data.
      */
-    public Pose2d[] getRecentNotePoses() {
+    public synchronized Pose2d[] getRecentNotePoses() { // TODO : Separate Shuffleboard part into Notifier
         ArrayList<Pose2d> notePosesList = new ArrayList<Pose2d>();
         this.widthDistanceEntry.setDouble(0);
         this.pitchDistanceEntry.setDouble(0);
         
         for (DetectionData data : this.recentDetectionDatas) {
-            if (data.timestamp >= Timer.getFPGATimestamp() - 5) {
+            if (data.timestamp >= Timer.getFPGATimestamp() - DetectionConstants.STALE_DATA_CUTOFF) {
                 double distance;
                 double widthDistance = getDistanceFromWidth(data.width, data.tx);
                 double pitchDistance = getDistanceFromPitch(data.ty);
@@ -174,7 +193,7 @@ public class DetectionSubsystem extends SubsystemBase {
                     continue;
                 }
 
-                if (distance <= DetectionConstants.MAX_NOTE_DISTANCE) {
+                if (distance <= DetectionConstants.MAX_NOTE_DISTANCE_TRUST) {
                     this.widthDistanceEntry.setDouble(widthDistance);
                     this.pitchDistanceEntry.setDouble(pitchDistance);
                     notePosesList.add(getNotePose(distance, data.tx));
@@ -192,7 +211,7 @@ public class DetectionSubsystem extends SubsystemBase {
      * @see {@link LimelightHelpers#getBotPoseEstimate(String limelightName, String entryName)}
      * for getting the data and timestamps.
      */
-    private DetectionData[] getDetectionDatas() {
+    private synchronized DetectionData[] getDetectionDatas() {
         DoubleArrayEntry rawDetectionsEntry = LimelightHelpers.getLimelightDoubleArrayEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections");
         double tl = LimelightHelpers.getLimelightNTDouble(LimelightConstants.NOTE_DETECTION_LL, "tl");
         double cl = LimelightHelpers.getLimelightNTDouble(LimelightConstants.NOTE_DETECTION_LL, "cl");

@@ -10,6 +10,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
+import frc.robot.limelights.DetectionSubsystem;
 
 /** Constants for Limelight-related code. */
 public final class LimelightConstants {
@@ -47,6 +48,11 @@ public final class LimelightConstants {
 
     /** Constants used for the note detection Limelight and detection algorithms. */
     public static final class DetectionConstants {
+        /**
+         * Note data younger than this time amount in seconds will be considered "recent" data.
+         * @see {@link DetectionSubsystem#GetRecentNotePoses()}
+         */
+        public static final double STALE_DATA_CUTOFF = 3;
         /** Whether or not the DetectionSubsystem will publish the top 3 most recent Notes. */
         public static final boolean PUBLISH_NOTE_POSES = true;
         /**
@@ -54,7 +60,11 @@ public final class LimelightConstants {
          * @apiNote Above 3 meters has significant drops in accuracy.
          * It is not recommended unless often updating the position when closing in on it.
          */
-        public static final double MAX_NOTE_DISTANCE = 4;
+        public static final double MAX_NOTE_DISTANCE_TRUST = 4;
+        /**
+         * Do not turn towards notes further than this value in meters from the robot.
+         */
+        public static final double MAX_NOTE_DISTANCE_DRIVING = 4;
 
         /**
          * The real-life outer diameter of a note in meters.
@@ -78,7 +88,7 @@ public final class LimelightConstants {
             )
         );
 
-        /** Heuristic conversion factor. Works with Limelight Resolution 1280x960 */
+        /** Heuristic conversion factor. Works with Limelight Resolution 1280x960. */
         public static final double PIXEL_TO_RAD = 900;
 
         /** The width of the screen in pixels, based on resolution. */
