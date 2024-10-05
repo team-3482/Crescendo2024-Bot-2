@@ -90,28 +90,20 @@ public class RobotContainer {
      */
     private void configureDrivetrain() {
         final CommandSwerveDrivetrain drivetrain = TunerConstants.DriveTrain;
-        final double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps; // kSpeedAt12VoltsMps desired top speed
-        final double MaxAngularRate = TunerConstants.kAngularSpeedMaxRadps; // 3/4 of a rotation per second max angular velocity
-        final double limitedMaxSpeed = MaxSpeed * 0.5;
-        final double limitedMaxAngularRate = MaxAngularRate * 0.5;
+        final double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps;
+        final double MaxAngularRate = TunerConstants.kAngularSpeedMaxRadps;
+        final double reasonableMaxSpeed = MaxSpeed * 0.5;
+        final double reasonableMaxAngularRate = MaxAngularRate * 0.5;
 
         final SwerveRequest.FieldCentric fieldCentricDrive_withDeadband = new SwerveRequest.FieldCentric()
-            .withDeadband(limitedMaxSpeed * ControllerConstants.DEADBAND)
-            .withRotationalDeadband(limitedMaxAngularRate * ControllerConstants.DEADBAND) // Add a deadband
-            .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
-        // TODO LATER : Toggle note facing assist for intaking ?
-        /*
-         * Toggle intake mode, will run intake motors when close to a note ?
-         */
-        final SwerveRequest.FieldCentricFacingAngle fieldCentricFacingAngle_withDeadband = new SwerveRequest.FieldCentricFacingAngle()
-            .withDeadband(limitedMaxSpeed * ControllerConstants.DEADBAND)
-            .withRotationalDeadband(limitedMaxAngularRate * ControllerConstants.DEADBAND)
+            .withDeadband(reasonableMaxSpeed * ControllerConstants.DEADBAND)
+            .withRotationalDeadband(reasonableMaxAngularRate * ControllerConstants.DEADBAND) // Add a deadband
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
         final Telemetry logger = new Telemetry(MaxSpeed);
 
-        Trigger leftTrigger = driverController.leftTrigger();
-        Trigger rightTrigger = driverController.rightTrigger();
+        Trigger leftTrigger = this.driverController.leftTrigger();
+        Trigger rightTrigger = this.driverController.rightTrigger();
 
         // Drivetrain will execute this command periodically
         drivetrain.setDefaultCommand(
@@ -123,30 +115,118 @@ public class RobotContainer {
                     // Drive forward with negative Y (forward)
                     .withVelocityX(
                         -driverController.getLeftY()
-                        * (topSpeed ? MaxSpeed : limitedMaxSpeed)
+                        * (topSpeed ? MaxSpeed : reasonableMaxSpeed)
                         * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1)
                     )
                     // Drive left with negative X (left)
                     .withVelocityY(
                         -driverController.getLeftX()
-                        * (topSpeed ? MaxSpeed : limitedMaxSpeed)
+                        * (topSpeed ? MaxSpeed : reasonableMaxSpeed)
                         * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1)
                     )
                     // Drive counterclockwise with negative X (left)
                     .withRotationalRate(
                         -driverController.getRightX()
-                        * (topSpeed ? MaxAngularRate : limitedMaxAngularRate)
+                        * (topSpeed ? MaxAngularRate : reasonableMaxAngularRate)
                         * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1)
                     );
+            }).ignoringDisable(true)
+        );
+
+        // TODO 2 : Test facing a note while driving.
+        // Toggle intake mode
+        // Faces closest note in vision and enables intake within 2 meters,
+        // or drives normally with intake enabled when no notes are found.
+        final SwerveRequest.FieldCentricFacingAngle fieldCentricFacingAngle_withDeadband = new SwerveRequest.FieldCentricFacingAngle()
+            .withDeadband(reasonableMaxSpeed * ControllerConstants.DEADBAND)
+            .withRotationalDeadband(reasonableMaxAngularRate * ControllerConstants.DEADBAND)
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+        
+        this.driverController.leftBumper().whileTrue(
+            drivetrain.applyRequest(() -> {
+                boolean topSpeed = leftTrigger.getAsBoolean();
+                boolean fineControl = rightTrigger.getAsBoolean();
+
+                double velocityX = -driverController.getLeftY()
+                    * (topSpeed ? MaxSpeed : reasonableMaxSpeed)
+                    * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1);
+                double velocityY = -driverController.getLeftX()
+                    * (topSpeed ? MaxSpeed : reasonableMaxSpeed)
+                    * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1);
+
+                Pose2d[] notePoses = DetectionSubsystem.getInstance().getRecentNotePoses();
+                
+                // If no Notes, drive normally
+                if (notePoses.length == 0) {
+                    System.out.println("IntakeSubsystem Enabled (no note)");
+                    return fieldCentricDrive_withDeadband
+                        .withVelocityX(velocityX)
+                        .withVelocityY(velocityY)
+                        .withRotationalRate(
+                            -driverController.getRightX()
+                            * (topSpeed ? MaxAngularRate : reasonableMaxAngularRate)
+                            * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1)
+                        );
+                }
+                else {
+                    Pose2d notePose = notePoses[0];
+                    
+                    // If within two meters, enable the intake
+                    if (drivetrain.getState().Pose.getTranslation()
+                        .getDistance(notePose.getTranslation()) <= 2
+                    ) {
+                        System.out.println("IntakeSubsystem Enabled (close to note)");
+                    }
+
+                    return fieldCentricFacingAngle_withDeadband
+                        .withVelocityX(velocityX)
+                        .withVelocityY(velocityY)
+                        .withCenterOfRotation(notePose.getTranslation());
+                }
             })
-            .ignoringDisable(true)
+        );
+        
+        // TODO 3 : Test targeting SPEAKER while driving.
+        this.driverController.rightBumper().whileTrue(
+            drivetrain.applyRequest(() -> {
+                boolean topSpeed = leftTrigger.getAsBoolean();
+                boolean fineControl = rightTrigger.getAsBoolean();
+
+                double velocityX = -driverController.getLeftY()
+                    * (topSpeed ? MaxSpeed : reasonableMaxSpeed)
+                    * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1);
+                double velocityY = -driverController.getLeftX()
+                    * (topSpeed ? MaxSpeed : reasonableMaxSpeed)
+                    * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1);
+
+                Translation2d speakerTranslation;
+                try {
+                    speakerTranslation = Positions.getSpeakerTarget().toTranslation2d();
+                }
+                catch (RuntimeException e) {
+                    System.err.println("Alliance is empty ; cannot target SPEAKER.");
+                    return fieldCentricDrive_withDeadband
+                        .withVelocityX(velocityX)
+                        .withVelocityY(velocityY)
+                        .withRotationalRate(
+                            -driverController.getRightX()
+                            * (topSpeed ? MaxAngularRate : reasonableMaxAngularRate)
+                            * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1)
+                        );
+                }
+                
+                return fieldCentricFacingAngle_withDeadband
+                    .withVelocityX(velocityX)
+                    .withVelocityY(velocityY)
+                    .withCenterOfRotation(speakerTranslation);
+            })
         );
 
         // Useful for testing
         // final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
         // final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
-        // driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
-        // driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
+        // this.driverController.x().whileTrue(drivetrain.applyRequest(() -> brake));
+        // this.driverController.y().whileTrue(drivetrain.applyRequest(() -> point.withModuleDirection(
         //     new Rotation2d(
         //         Math.abs(driverController.getLeftY()) >= 0.25 ? -driverController.getLeftY() : 0,
         //         Math.abs(driverController.getLeftX()) >= 0.25 ? -driverController.getLeftX() : 0
@@ -174,11 +254,10 @@ public class RobotContainer {
             );
 
             povSpeeds.forEach(
-                (Integer angle, Integer[] speeds) -> driverController.pov(angle).whileTrue(
+                (Integer angle, Integer[] speeds) -> this.driverController.pov(angle).whileTrue(
                     drivetrain.applyRequest(() -> {
                         boolean faster = leftTrigger.getAsBoolean();
                         boolean robotCentric = rightTrigger.getAsBoolean();
-                        System.out.println(robotCentric);
                         
                         return robotCentric
                             ? robotCentricDrive
@@ -193,9 +272,9 @@ public class RobotContainer {
         }
 
         // Burger
-        driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
+        this.driverController.start().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
         // Double Rectangle
-        driverController.back().onTrue(drivetrain.runOnce(() -> {
+        this.driverController.back().onTrue(drivetrain.runOnce(() -> {
             Pose2d estimatedPose = VisionSubsystem.getInstance().getEstimatedPose();
             if (!estimatedPose.equals(new Pose2d())) {
                 drivetrain.seedFieldRelative(estimatedPose);
@@ -240,7 +319,7 @@ public class RobotContainer {
     /** Configures the button bindings of the driver controller */
     private void configureDriverBindings() {
         // Cancel all currently scheduled commands
-        driverController.b().onTrue(Commands.runOnce(() -> {
+        this.driverController.b().onTrue(Commands.runOnce(() -> {
             CommandScheduler.getInstance().cancelAll();
         }));
 
@@ -252,7 +331,7 @@ public class RobotContainer {
          * Back / Double Rectangle : Reset position to LL data (if not empty)
          *    POV (overrides joys) : Directional movement -- 0.25 m/s
          */
-        driverController.back().onTrue(
+        this.driverController.back().onTrue(
             TunerConstants.DriveTrain.runOnce(() -> TunerConstants.DriveTrain.seedFieldRelative(
                 new Pose2d(new Translation2d(5,6), new Rotation2d())
             ))
@@ -264,9 +343,17 @@ public class RobotContainer {
          *     Right Trigger > 0.5 : Use FINE CONTROL for joysticks
          *                           Use ROBOT CENTRIC for POV 
          */
+        /*
+         * Bumpers are also used in configureDrivetrain()
+         *      Left bumper (hold) : Targets nearest Note to rotate around.
+         *                           Enables intake if no note is seen or if
+         *                           within 2 meters of the nearest one.
+         *     Right bumper (hold) : Targets SPEAKER to rotate around.
+         *                           Does NOT shoot (operator's job).
+         */
 
-        // TODO LATER : Test DriveToNoteCommand() with live path-adjustment (look at PP)
-        driverController.x().onTrue(new DriveToNoteCommand());
+        // TODO 4 : Test driving to a note with a variety of distances / configurations.
+        this.driverController.x().onTrue(new DriveToNoteCommand());
     }
 
     /** Configures the button bindings of the driver controller */

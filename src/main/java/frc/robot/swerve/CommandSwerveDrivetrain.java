@@ -62,7 +62,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
             driveBaseRadius = Math.max(driveBaseRadius, moduleLocation.getNorm());
         }
 
-        AutoBuilder.configureHolonomic( // TODO 1 : Final PP Test
+        // TODO 1 : Finish tuning PathPlanner using the last testing path.
+        AutoBuilder.configureHolonomic(
             () -> this.getState().Pose, // Supplier of current robot pose
             this::seedFieldRelative,  // Consumer for seeding pose against auto
             this::getCurrentRobotChassisSpeeds,

@@ -31,20 +31,25 @@ public class DriveToNoteCommand extends Command {
     
     private Command pathingCommand;
     private boolean finished;
-    private Pose2d notePose;
+    private Pose2d firstNotePose;
+    private Pose2d currentNotePose;
+
+    // TODO 4.f : After testing, remove this variable.
+    private int rePathingCount;
 
     /** Creates a new DriveToNoteCommand. */
     public DriveToNoteCommand() {
         setName("DriveToNoteCommand");
         // No requirements, because PathPlanner's Command requires the DriveTrain
         // This wrapper is only useful for creating the PathPlanner Path
-        addRequirements(); 
+        addRequirements();
     }
 
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
         this.finished = false;
+        this.rePathingCount = 0;
         
         Pose2d[] notePoses = DetectionSubsystem.getInstance().getRecentNotePoses();
         if (notePoses.length == 0) {
@@ -52,8 +57,8 @@ public class DriveToNoteCommand extends Command {
             return;
         }
 
-        this.notePose = notePoses[0];
-        this.pathingCommand = generatePath(notePose);
+        this.firstNotePose = this.currentNotePose = notePoses[0];
+        this.pathingCommand = generatePath(currentNotePose);
         
         CommandScheduler.getInstance().schedule(this.pathingCommand);
     }
@@ -61,7 +66,7 @@ public class DriveToNoteCommand extends Command {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        if (this.finished) return;
+        if (!this.pathingCommand.isScheduled() || this.finished) return;
 
         Pose2d[] notePoses = DetectionSubsystem.getInstance().getRecentNotePoses();
         if (notePoses.length == 0) {
@@ -69,14 +74,24 @@ public class DriveToNoteCommand extends Command {
         }
 
         Pose2d newNotePose = notePoses[0];
-        double error = this.notePose.getTranslation().getDistance(newNotePose.getTranslation());
+        double error = this.currentNotePose.getTranslation().getDistance(newNotePose.getTranslation());
 
-        // TODO LATER : Test driving to a note from as far as possible
-        System.out.println(error);
+        // TODO 4.f : After testing, remove this line.
+        System.out.printf("Error : %.3f%n", error);
 
-        // Make sure it's still targetting the same note
-        // Error should be between 0.1 and 0.3 meters
-        if (0.1 <= error && error <= 0.3) {
+        // Make sure it's still targeting the same note
+        // Error should be between 0.15 and 0.35 meters before it updates
+        if (0.15 <= error && error <= 0.35) {
+            // If it's close, then the error is probably faulty data due to the
+            // note getting cut off the screen by being too close.
+            if (TunerConstants.DriveTrain.getState().Pose.getTranslation()
+                .getDistance(firstNotePose.getTranslation()) <= 1
+            ) {
+                return;
+            }
+            System.out.printf("Re-pathing count : %f%n", (float) ++rePathingCount);
+            
+            this.currentNotePose = newNotePose;
             CommandScheduler.getInstance().cancel(this.pathingCommand);
             this.pathingCommand = generatePath(newNotePose);
             CommandScheduler.getInstance().schedule(this.pathingCommand);
@@ -86,7 +101,7 @@ public class DriveToNoteCommand extends Command {
     // Called once the command ends or is interrupted.
     @Override
     public void end(boolean interrupted) {
-        if (this.pathingCommand.isScheduled()) {
+        if (this.pathingCommand != null && this.pathingCommand.isScheduled()) {
             CommandScheduler.getInstance().cancel(this.pathingCommand);
         }
     }
@@ -107,15 +122,15 @@ public class DriveToNoteCommand extends Command {
 
         // Takes into account angles in quadrants II and III
         Rotation2d faceNoteRot = new Rotation2d(Math.atan2(
-            this.notePose.getY() - botTranslation.getY(),
-            this.notePose.getX() - botTranslation.getX()
+            this.currentNotePose.getY() - botTranslation.getY(),
+            this.currentNotePose.getX() - botTranslation.getX()
         ));
 
         Pose2d botPose = new Pose2d(botTranslation, faceNoteRot);
         notePose = new Pose2d(notePose.getTranslation(), faceNoteRot);
 
         GoalEndState goalEndState = new GoalEndState(
-            0.25, // End with enough speed to pick up the note
+            0, // End with enough speed to pick up the note
             faceNoteRot,
             true
         );

@@ -49,8 +49,12 @@ public final class LimelightConstants {
     public static final class DetectionConstants {
         /** Whether or not the DetectionSubsystem will publish the top 3 most recent Notes. */
         public static final boolean PUBLISH_NOTE_POSES = true;
-        /** Do not trust any note positions above this distance from the camera. In meters. */
-        public static final double MAX_NOTE_DISTANCE = 3;
+        /**
+         * Do not trust any note distances further than this value in meters from the camera.
+         * @apiNote Above 3 meters has significant drops in accuracy.
+         * It is not recommended unless often updating the position when closing in on it.
+         */
+        public static final double MAX_NOTE_DISTANCE = 4;
 
         /**
          * The real-life outer diameter of a note in meters.

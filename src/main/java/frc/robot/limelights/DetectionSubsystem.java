@@ -63,19 +63,19 @@ public class DetectionSubsystem extends SubsystemBase {
     private final ShuffleboardLayout shuffleboardLayout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
         .getLayout("DetectionSubsystem", BuiltInLayouts.kGrid)
         .withProperties(Map.of("Number of columns", 1, "Number of rows", 2, "Label position", "TOP"))
-        .withSize(3, 3);
+        .withSize(2, 3);
     private final GenericEntry widthDistanceEntry = shuffleboardLayout
         .add("Closest Width-D (m)", 0)
         .withWidget(BuiltInWidgets.kNumberBar)
         .withProperties(Map.of("Min", 0, "Max", DetectionConstants.MAX_NOTE_DISTANCE, "Num tick marks", 2))
-        .withSize(3, 1)
+        .withSize(2, 1)
         .withPosition(0, 0)
         .getEntry();
     private final GenericEntry pitchDistanceEntry = shuffleboardLayout
         .add("Closest Pitch-D (m)", 0)
         .withWidget(BuiltInWidgets.kNumberBar)
         .withProperties(Map.of("Min", 0, "Max", DetectionConstants.MAX_NOTE_DISTANCE, "Num tick marks", 2))
-        .withSize(3, 1)
+        .withSize(2, 1)
         .withPosition(0, 1)
         .getEntry();
 
