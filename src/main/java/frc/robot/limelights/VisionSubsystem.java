@@ -94,8 +94,8 @@ public class VisionSubsystem extends SubsystemBase {
 
         this.notifier = new Notifier(() -> notifierLoop());
         this.notifier.setName("Vision Notifier");
-        // Run at the same speed as a robot cycle (20 ms).
-        this.notifier.startPeriodic(0.2);
+        // Assuming ~40 fps / 25 ms cycle.
+        this.notifier.startPeriodic(0.025);
     }
 
     // This method will be called once per scheduler run
@@ -110,7 +110,7 @@ public class VisionSubsystem extends SubsystemBase {
     private synchronized void notifierLoop() {
         // This method gets data in about 4 to 8 ms.
         VisionData[] filteredLimelightDatas = getFilteredLimelightData(false);
-
+        
         // This loop generally updates data in about 6 ms, but may double or triple for no apparent reason.
         // This causes loop overrun warnings, however, it doesn't seem to be due to inefficient code and thus can be ignored.
         for (VisionData data : filteredLimelightDatas) {
@@ -185,8 +185,9 @@ public class VisionSubsystem extends SubsystemBase {
                 || Math.abs(velocity) > 2 // m/s
                 || (this.lastHeartbeatBackLL != heartbeatBackLL && this.lastHeartbeatFrontLL != heartbeatFrontLL)
                 || ((frontLLDataMT2 == null || frontLLDataMT2.tagCount == 0) && (backLLDataMT2 == null || backLLDataMT2.tagCount == 0))
-                || (frontLLDataMT2 == null || frontLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE
-                    && backLLDataMT2 == null || backLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE)) {
+                || ((frontLLDataMT2 == null || frontLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE)
+                    && (backLLDataMT2 == null || backLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE))
+            ) {
                 return new VisionData[0];
             }
         }
