@@ -50,7 +50,7 @@ public final class LimelightConstants {
         /** Whether or not the DetectionSubsystem will publish the top 3 most recent Notes. */
         public static final boolean PUBLISH_NOTE_POSES = true;
         /** Do not trust any note positions above this distance from the camera. In meters. */
-        public static final double MAX_NOTE_DISTANCE = 3.5;
+        public static final double MAX_NOTE_DISTANCE = 3;
 
         /**
          * The real-life outer diameter of a note in meters.
@@ -90,6 +90,17 @@ public final class LimelightConstants {
         public static Function<Double, Double> WIDTH_DIST_ERROR_CORRECTION = (Double d) -> {
             final double m = 0.058;
             final double b = m * Math.exp(0.5);
+            return m * Math.exp(d) - b;
+        };
+
+        /**
+         * A formula that attempts to account for the detection error of far-away notes. 
+         * This should only be applied for notes 0.5 m or more away.
+         * @see https://www.desmos.com/calculator/uyzeqe3i0l
+         */
+        public static Function<Double, Double> PITCH_DIST_ERROR_CORRECTION = (Double d) -> {
+            final double m = 0.028;
+            final double b = m; // * Math.exp(0)
             return m * Math.exp(d) - b;
         };
     }

@@ -24,11 +24,12 @@ import frc.robot.swerve.TunerConstants;
  * Accounts for increased accuraccy with decreased distance.
  */
 public class DriveToNoteCommand extends Command {
-    private Command pathingCommand;
     private final PathConstraints constraints = new PathConstraints(
-        4.45, 1, // TODO LATER : Do not use these values haha
-        Units.degreesToRadians(270), Units.degreesToRadians(180)
+        4.3, 2,
+        Units.degreesToRadians(720), Units.degreesToRadians(540)
     );
+    
+    private Command pathingCommand;
     private boolean finished;
     private Pose2d notePose;
 
@@ -60,22 +61,22 @@ public class DriveToNoteCommand extends Command {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
+        if (this.finished) return;
+
         Pose2d[] notePoses = DetectionSubsystem.getInstance().getRecentNotePoses();
         if (notePoses.length == 0) {
             return; // Go by last known note position
         }
 
         Pose2d newNotePose = notePoses[0];
-        Translation2d average = this.notePose.getTranslation().plus(newNotePose.getTranslation()).div(2);
-        
-        double distance = this.notePose.getTranslation().getDistance(average);
+        double error = this.notePose.getTranslation().getDistance(newNotePose.getTranslation());
 
         // TODO LATER : Test driving to a note from as far as possible
-        System.out.println(distance);
+        System.out.println(error);
 
-        // Make sure it's still targetting the same note (10 cm error allowed),
-        // or one that's no more than 35 cm away from the original target
-        if (distance > 0.10 && distance < 0.35) {
+        // Make sure it's still targetting the same note
+        // Error should be between 0.1 and 0.3 meters
+        if (0.1 <= error && error <= 0.3) {
             CommandScheduler.getInstance().cancel(this.pathingCommand);
             this.pathingCommand = generatePath(newNotePose);
             CommandScheduler.getInstance().schedule(this.pathingCommand);
@@ -102,15 +103,20 @@ public class DriveToNoteCommand extends Command {
      * @return The PathPlanner Command.
      */
     private Command generatePath(Pose2d notePose) {
-        Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
+        Translation2d botTranslation = TunerConstants.DriveTrain.getState().Pose.getTranslation();
+
+        // Takes into account angles in quadrants II and III
+        Rotation2d faceNoteRot = new Rotation2d(Math.atan2(
+            this.notePose.getY() - botTranslation.getY(),
+            this.notePose.getX() - botTranslation.getX()
+        ));
+
+        Pose2d botPose = new Pose2d(botTranslation, faceNoteRot);
+        notePose = new Pose2d(notePose.getTranslation(), faceNoteRot);
 
         GoalEndState goalEndState = new GoalEndState(
-            0,
-            // Takes into account angles in quadrants II and III
-            new Rotation2d(Math.atan2(
-                this.notePose.getY() - botPose.getY(),
-                this.notePose.getX() - botPose.getX()
-            )),
+            0.25, // End with enough speed to pick up the note
+            faceNoteRot,
             true
         );
 

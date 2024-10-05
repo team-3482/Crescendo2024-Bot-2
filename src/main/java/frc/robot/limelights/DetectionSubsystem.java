@@ -14,13 +14,16 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.DoubleArrayEntry;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.TimestampedDoubleArray;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.LimelightConstants;
@@ -56,6 +59,25 @@ public class DetectionSubsystem extends SubsystemBase {
     private final DoubleArrayPublisher note2 = table.getDoubleArrayTopic("note2").publish();
     private final DoubleArrayPublisher note3 = table.getDoubleArrayTopic("note3").publish();
     private final StringPublisher fieldTypePub = table.getStringTopic(".type").publish();
+
+    private final ShuffleboardLayout shuffleboardLayout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+        .getLayout("DetectionSubsystem", BuiltInLayouts.kGrid)
+        .withProperties(Map.of("Number of columns", 1, "Number of rows", 2, "Label position", "TOP"))
+        .withSize(3, 3);
+    private final GenericEntry widthDistanceEntry = shuffleboardLayout
+        .add("Closest Width-D (m)", 0)
+        .withWidget(BuiltInWidgets.kNumberBar)
+        .withProperties(Map.of("Min", 0, "Max", DetectionConstants.MAX_NOTE_DISTANCE, "Num tick marks", 2))
+        .withSize(3, 1)
+        .withPosition(0, 0)
+        .getEntry();
+    private final GenericEntry pitchDistanceEntry = shuffleboardLayout
+        .add("Closest Pitch-D (m)", 0)
+        .withWidget(BuiltInWidgets.kNumberBar)
+        .withProperties(Map.of("Min", 0, "Max", DetectionConstants.MAX_NOTE_DISTANCE, "Num tick marks", 2))
+        .withSize(3, 1)
+        .withPosition(0, 1)
+        .getEntry();
 
     /** Creates a new DetectionSubsystem. */
     private DetectionSubsystem() {
@@ -131,23 +153,30 @@ public class DetectionSubsystem extends SubsystemBase {
      */
     public Pose2d[] getRecentNotePoses() {
         ArrayList<Pose2d> notePosesList = new ArrayList<Pose2d>();
-
+        this.widthDistanceEntry.setDouble(0);
+        this.pitchDistanceEntry.setDouble(0);
+        
         for (DetectionData data : this.recentDetectionDatas) {
             if (data.timestamp >= Timer.getFPGATimestamp() - 5) {
                 double distance;
+                double widthDistance = getDistanceFromWidth(data.width, data.tx);
+                double pitchDistance = getDistanceFromPitch(data.ty);
                 
                 if (data.canTrustWidth) {
-                    distance = getDistanceFromWidth(data.width, data.tx);
+                    distance = widthDistance;
                 }
                 else if (data.canTrustPitch) {
-                    // TODO : Test the viability of distance from pitch
-                    distance = getDistanceFromPitch(data.ty);
+                    distance = pitchDistance;
                 }
                 else {
+                    this.widthDistanceEntry.setDouble(0);
+                    this.pitchDistanceEntry.setDouble(0);
                     continue;
                 }
-                
+
                 if (distance <= DetectionConstants.MAX_NOTE_DISTANCE) {
+                    this.widthDistanceEntry.setDouble(widthDistance);
+                    this.pitchDistanceEntry.setDouble(pitchDistance);
                     notePosesList.add(getNotePose(distance, data.tx));
                 }
             }
@@ -223,18 +252,16 @@ public class DetectionSubsystem extends SubsystemBase {
      * This is less accurate and should be used when the full width of the note is unavailable.
      * @param ty - Raw ty from the camera in degrees.
      * @return The distance to the note in meters.
-     * @deprecated Very innacurate. Not sure if math issue or LL ty accuracy issue.
      */
-    @Deprecated
     private double getDistanceFromPitch(double ty) {
         double pitch = DetectionConstants.LIMELIGHT_POSITION.getRotation().getY();
-        double theta = Math.abs(pitch + Units.degreesToRadians(ty));
-        double limelightHeight = DetectionConstants.LIMELIGHT_POSITION.getZ();
+        double theta = Math.PI / 2 - Math.abs(pitch + Units.degreesToRadians(ty));
+        double height = DetectionConstants.LIMELIGHT_POSITION.getZ(); // - DetectionConstants.NOTE_Height
         
-        double distance = (limelightHeight - DetectionConstants.NOTE_HEIGHT) / Math.tan(theta);
-        // System.out.println(distance);
-        // distance += Units.inchesToMeters(2 * Math.log(distance));
-        return distance;// + DetectionConstants.NOTE_DIAMETER / 2;
+        double distance = height * Math.tan(theta);
+        distance += DetectionConstants.PITCH_DIST_ERROR_CORRECTION.apply(distance);
+        
+        return distance;
     }
 
     /**
@@ -242,7 +269,8 @@ public class DetectionSubsystem extends SubsystemBase {
      * @param distance - The distance to the note from the camera.
      * @param tx - Raw tx from the camera in degrees.
      * @return The Pose of the note.
-     * @apiNote The rotation is 0 because notes are circular.
+     * @apiNote The Rotation2d component of this Pose2d is the heading that
+     * the bot needs to face this Note based on the Limelight's tx only.
      */
     private Pose2d getNotePose(double distance, double tx) {
         double yaw = Math.PI / 2 + DetectionConstants.LIMELIGHT_POSITION.getRotation().getZ();

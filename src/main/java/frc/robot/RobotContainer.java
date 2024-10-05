@@ -266,7 +266,7 @@ public class RobotContainer {
          */
 
         // TODO LATER : Test DriveToNoteCommand() with live path-adjustment (look at PP)
-        // driverController.x().onTrue(new DriveToNoteCommand());
+        driverController.x().onTrue(new DriveToNoteCommand());
     }
 
     /** Configures the button bindings of the driver controller */

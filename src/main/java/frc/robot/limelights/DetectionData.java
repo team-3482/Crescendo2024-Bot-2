@@ -61,8 +61,8 @@ public class DetectionData {
      * @apiNote Within 35 px of the edges.
      */
     private boolean canTrustPitch(double[] yCorners) {
-        return yCorners[0] + 35 < DetectionConstants.SCREEN_HEIGHT
-            && yCorners[1] - 35 > 0;
+        return yCorners[0] + 35 < DetectionConstants.SCREEN_HEIGHT;
+            // && yCorners[1] - 35 > 0; // Trust pitch close-up
     }
 
     /**
