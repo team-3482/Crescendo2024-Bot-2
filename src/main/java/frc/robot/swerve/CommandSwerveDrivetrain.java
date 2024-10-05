@@ -13,14 +13,19 @@ import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
 import com.pathplanner.lib.util.PIDConstants;
 import com.pathplanner.lib.util.ReplanningConfig;
 
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
+import frc.robot.constants.Constants;
 
 /**
  * Class that extends the Phoenix SwerveDrivetrain class and implements
@@ -39,6 +44,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
     private boolean hasAppliedOperatorPerspective = false;
 
     private final SwerveRequest.ApplyChassisSpeeds AutoRequest = new SwerveRequest.ApplyChassisSpeeds();
+
+    private volatile SwerveDrivePoseEstimator m_odometry;
 
     public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency, SwerveModuleConstants... modules) {
         super(driveTrainConstants, OdometryUpdateFrequency, modules);
@@ -121,6 +128,64 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
                         RedAlliancePerspectiveRotation : BlueAlliancePerspectiveRotation);
                 hasAppliedOperatorPerspective = true;
             });
+        }
+    }
+
+    /**
+     * Adds a vision measurement to the Kalman Filter. This will correct the
+     * odometry pose estimate
+     * while still accounting for measurement noise.
+     *
+     * <p>
+     * This method can be called as infrequently as you want, as long as you are
+     * calling {@link
+     * SwerveDrivePoseEstimator#update} every loop.
+     *
+     * <p>
+     * To promote stability of the pose estimate and make it robust to bad vision
+     * data, we
+     * recommend only adding vision measurements that are already within one meter
+     * or so of the
+     * current pose estimate.
+     *
+     * @param visionRobotPoseMeters The pose of the robot as measured by the vision
+     *                              camera.
+     * @param timestampSeconds      The timestamp of the vision measurement in
+     *                              seconds. Note that if you
+     *                              don't use your own time source by calling {@link
+     *                              SwerveDrivePoseEstimator#updateWithTime(double,Rotation2d,SwerveModulePosition[])}
+     *                              then you
+     *                              must use a timestamp with an epoch since FPGA
+     *                              startup (i.e., the epoch of this timestamp is
+     *                              the same epoch as
+     *                              {@link edu.wpi.first.wpilibj.Timer#getFPGATimestamp()}.)
+     *                              This means that
+     *                              you should use
+     *                              {@link edu.wpi.first.wpilibj.Timer#getFPGATimestamp()}
+     *                              as your time source
+     *                              or sync the epochs.
+     */
+    @Override
+    public synchronized void addVisionMeasurement(Pose2d visionRobotPoseMeters, double timestampSeconds) {
+        try {
+            m_stateLock.writeLock().lock();
+            m_odometry.addVisionMeasurement(visionRobotPoseMeters, timestampSeconds);
+        } finally {
+            m_stateLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * This class exists because for some reason Java refuses to let the code in RobotContainer
+     * intefrace with the HeadingController of FieldCentricFacingAngle
+     * (despite it being public).
+     */
+    public static class FieldCentricFacingAngle_PID_Workaround extends SwerveRequest.FieldCentricFacingAngle {
+        public FieldCentricFacingAngle_PID_Workaround() {
+            super();
+            this.HeadingController = Constants.HeadingControllerFacingAngle;
+            this.HeadingController.enableContinuousInput(0, 2 * Math.PI);
+            this.HeadingController.setTolerance(Units.degreesToRadians(1));
         }
     }
 }

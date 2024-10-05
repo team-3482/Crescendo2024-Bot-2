@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import edu.wpi.first.cscore.HttpCamera;
+import edu.wpi.first.math.estimator.PoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;

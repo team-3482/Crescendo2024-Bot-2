@@ -15,6 +15,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -48,12 +49,15 @@ public class VisionSubsystem extends SubsystemBase {
         return instance;
     }
 
+    /** Used to run vision processing on a separate thread. */
+    private final Notifier notifier;
+
     /** Latest Limelight data. May contain faulty data unsuitable for odometry. */
-    private VisionData[] limelightDatas = new VisionData[2];
+    private volatile VisionData[] limelightDatas = new VisionData[2];
     /** Last heartbeat of the front LL (updated every frame) */
-    private long lastHeartbeatFrontLL = 0;
+    private volatile long lastHeartbeatFrontLL = 0;
     /** Last heartbeat of the back LL (updated every frame) */
-    private long lastHeartbeatBackLL = 0;
+    private volatile long lastHeartbeatBackLL = 0;
 
     // Lists used for tag filtering. Final to reduce wasted processing power.
     private final List<Integer> BLUE_SOURCE = Arrays.asList(1, 2, 3, 4);
@@ -87,11 +91,23 @@ public class VisionSubsystem extends SubsystemBase {
                 .withWidget(BuiltInWidgets.kCameraStream)
                 .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
         }
+
+        this.notifier = new Notifier(() -> notifierLoop());
+        this.notifier.setName("Vision Notifier");
+        // Run at the same speed as a robot cycle (20 ms).
+        this.notifier.startPeriodic(0.2);
     }
 
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
+        // Uses Notifier for separate-thread Vision processing
+    }
+
+    /**
+     * This method is used in conjunction with a Notifier to run vision processing on a separate thread.
+     */
+    private synchronized void notifierLoop() {
         // This method gets data in about 4 to 8 ms.
         VisionData[] filteredLimelightDatas = getFilteredLimelightData(false);
 

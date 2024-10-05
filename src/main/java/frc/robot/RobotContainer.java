@@ -133,13 +133,11 @@ public class RobotContainer {
             }).ignoringDisable(true)
         );
 
-        // TODO 2 : Test facing a note while driving.
         // Toggle intake mode
         // Faces closest note in vision and enables intake within 2 meters,
         // or drives normally with intake enabled when no notes are found.
-        final SwerveRequest.FieldCentricFacingAngle fieldCentricFacingAngle_withDeadband = new SwerveRequest.FieldCentricFacingAngle()
+        final SwerveRequest.FieldCentricFacingAngle fieldCentricFacingAngle_withDeadband = new CommandSwerveDrivetrain.FieldCentricFacingAngle_PID_Workaround()
             .withDeadband(reasonableMaxSpeed * ControllerConstants.DEADBAND)
-            .withRotationalDeadband(reasonableMaxAngularRate * ControllerConstants.DEADBAND)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
         
         this.driverController.leftBumper().whileTrue(
@@ -155,9 +153,13 @@ public class RobotContainer {
                     * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1);
 
                 Pose2d[] notePoses = DetectionSubsystem.getInstance().getRecentNotePoses();
+                Translation2d botTranslation = drivetrain.getState().Pose.getTranslation();
                 
-                // If no Notes, drive normally
-                if (notePoses.length == 0) {
+                // If no Notes OR Note further than 3 meters, drive normally
+                // TODO 2 : Test no distance limit
+                if (notePoses.length == 0
+                    || notePoses[0].getTranslation().getDistance(botTranslation) >= 3
+                ) {
                     System.out.println("IntakeSubsystem Enabled (no note)");
                     return fieldCentricDrive_withDeadband
                         .withVelocityX(velocityX)
@@ -173,20 +175,24 @@ public class RobotContainer {
                     
                     // If within two meters, enable the intake
                     if (drivetrain.getState().Pose.getTranslation()
-                        .getDistance(notePose.getTranslation()) <= 2
+                        .getDistance(notePose.getTranslation()) <= 1
                     ) {
                         System.out.println("IntakeSubsystem Enabled (close to note)");
                     }
 
+                    Rotation2d targetRotation = new Rotation2d(Math.atan2(
+                        notePose.getY() - botTranslation.getY(),
+                        notePose.getX() - botTranslation.getX()
+                    ));
+
                     return fieldCentricFacingAngle_withDeadband
                         .withVelocityX(velocityX)
                         .withVelocityY(velocityY)
-                        .withCenterOfRotation(notePose.getTranslation());
+                        .withTargetDirection(targetRotation);
                 }
             })
         );
         
-        // TODO 3 : Test targeting SPEAKER while driving.
         this.driverController.rightBumper().whileTrue(
             drivetrain.applyRequest(() -> {
                 boolean topSpeed = leftTrigger.getAsBoolean();
@@ -214,11 +220,19 @@ public class RobotContainer {
                             * (fineControl ? ControllerConstants.FINE_CONTROL_MULT : 1)
                         );
                 }
+
+                Translation2d botTranslation = drivetrain.getState().Pose.getTranslation();
+                Rotation2d targetRotation = new Rotation2d(
+                    Math.atan2(
+                        speakerTranslation.getY() - botTranslation.getY(),
+                        speakerTranslation.getX() - botTranslation.getX() 
+                    ) + Math.PI // Face with shooter, which is the back of the bot
+                );
                 
                 return fieldCentricFacingAngle_withDeadband
                     .withVelocityX(velocityX)
                     .withVelocityY(velocityY)
-                    .withCenterOfRotation(speakerTranslation);
+                    .withTargetDirection(targetRotation);
             })
         );
 
@@ -333,7 +347,7 @@ public class RobotContainer {
          */
         this.driverController.back().onTrue(
             TunerConstants.DriveTrain.runOnce(() -> TunerConstants.DriveTrain.seedFieldRelative(
-                new Pose2d(new Translation2d(5,6), new Rotation2d())
+                new Pose2d(new Translation2d(5, 5), new Rotation2d())
             ))
         );
         /*
@@ -352,7 +366,7 @@ public class RobotContainer {
          *                           Does NOT shoot (operator's job).
          */
 
-        // TODO 4 : Test driving to a note with a variety of distances / configurations.
+        // TODO 3 : Test driving to a note with a variety of distances / configurations.
         this.driverController.x().onTrue(new DriveToNoteCommand());
     }
 

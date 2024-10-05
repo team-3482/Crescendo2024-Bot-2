@@ -34,7 +34,7 @@ public class DriveToNoteCommand extends Command {
     private Pose2d firstNotePose;
     private Pose2d currentNotePose;
 
-    // TODO 4.f : After testing, remove this variable.
+    // TODO 3.f : After testing, remove this variable.
     private int rePathingCount;
 
     /** Creates a new DriveToNoteCommand. */
@@ -76,7 +76,7 @@ public class DriveToNoteCommand extends Command {
         Pose2d newNotePose = notePoses[0];
         double error = this.currentNotePose.getTranslation().getDistance(newNotePose.getTranslation());
 
-        // TODO 4.f : After testing, remove this line.
+        // TODO 3.f : After testing, remove this line.
         System.out.printf("Error : %.3f%n", error);
 
         // Make sure it's still targeting the same note
