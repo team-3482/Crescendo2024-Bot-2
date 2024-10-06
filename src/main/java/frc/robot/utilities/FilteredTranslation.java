@@ -14,7 +14,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 public class FilteredTranslation {
     /**
      * Number of samples to average over.
-     * @see {@link LinearFilter#movingAverage(int)}
+     * @see {@link LinearFilter#movingAverage(int)}.
      */
     public static final int TAPS = 15;
     private final LinearFilter xFilter;

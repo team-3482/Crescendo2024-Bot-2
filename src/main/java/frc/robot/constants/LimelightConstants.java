@@ -61,9 +61,7 @@ public final class LimelightConstants {
          * It is not recommended unless often updating the position when closing in on it.
          */
         public static final double MAX_NOTE_DISTANCE_TRUST = 4;
-        /**
-         * Do not turn towards notes further than this value in meters from the robot.
-         */
+        /** Do not turn towards notes further than this value in meters from the robot. */
         public static final double MAX_NOTE_DISTANCE_DRIVING = 4;
 
         /**

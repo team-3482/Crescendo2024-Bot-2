@@ -58,6 +58,9 @@ public class DetectionSubsystem extends SubsystemBase {
     private volatile ArrayList<DetectionData> recentDetectionDatas = new ArrayList<DetectionData>();
     private volatile ArrayList<FilteredTranslation> recentFilteredTranslations = new ArrayList<FilteredTranslation>();
 
+    /** Last heartbeat of the LL (updated every frame) */
+    private volatile long lastHeartbeatLL = 0;
+
     /* What to publish over networktables for telemetry */
     private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
     private final NetworkTable table = inst.getTable("Note Pose");
@@ -299,6 +302,16 @@ public class DetectionSubsystem extends SubsystemBase {
      * for getting the data and timestamps.
      */
     private synchronized DetectionData[] getDetectionDatas() {
+        long recentHeartbeatLL = LimelightHelpers.getLimelightNTTableEntry(LimelightConstants.NOTE_DETECTION_LL, "hb").getInteger(-1);
+
+        // If not on a new frame, do not re-process a previous frame.
+        if (recentHeartbeatLL == -1 || this.lastHeartbeatLL < recentHeartbeatLL) {
+            this.lastHeartbeatLL = recentHeartbeatLL == -1 ? this.lastHeartbeatLL : recentHeartbeatLL;
+        }
+        else {
+            return new DetectionData[0];
+        }
+
         DoubleArrayEntry rawDetectionsEntry = LimelightHelpers.getLimelightDoubleArrayEntry(LimelightConstants.NOTE_DETECTION_LL, "rawdetections");
         double tl = LimelightHelpers.getLimelightNTDouble(LimelightConstants.NOTE_DETECTION_LL, "tl");
         double cl = LimelightHelpers.getLimelightNTDouble(LimelightConstants.NOTE_DETECTION_LL, "cl");
