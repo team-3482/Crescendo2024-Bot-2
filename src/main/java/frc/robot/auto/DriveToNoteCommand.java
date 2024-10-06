@@ -13,6 +13,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.limelights.DetectionSubsystem;
@@ -30,9 +31,9 @@ public class DriveToNoteCommand extends Command {
     );
     
     private Command pathingCommand;
-    private boolean finished;
-    private Pose2d firstNotePose;
+    private Timer timer;
     private Pose2d currentNotePose;
+    private boolean finished;
 
     // TODO 3.f : After testing, remove this variable.
     private int rePathingCount;
@@ -40,6 +41,7 @@ public class DriveToNoteCommand extends Command {
     /** Creates a new DriveToNoteCommand. */
     public DriveToNoteCommand() {
         setName("DriveToNoteCommand");
+        this.timer = new Timer();
         // No requirements, because PathPlanner's Command requires the DriveTrain
         // This wrapper is only useful for creating the PathPlanner Path
         addRequirements();
@@ -50,6 +52,7 @@ public class DriveToNoteCommand extends Command {
     public void initialize() {
         this.finished = false;
         this.rePathingCount = 0;
+        this.timer.restart();
         
         Pose2d[] notePoses = DetectionSubsystem.getInstance().getRecentNotePoses();
         if (notePoses.length == 0) {
@@ -57,9 +60,9 @@ public class DriveToNoteCommand extends Command {
             return;
         }
 
-        this.firstNotePose = this.currentNotePose = notePoses[0];
-        this.pathingCommand = generatePath(currentNotePose);
+        this.currentNotePose = notePoses[0];
         
+        this.pathingCommand = generatePath(this.currentNotePose);
         CommandScheduler.getInstance().schedule(this.pathingCommand);
     }
 
@@ -67,34 +70,37 @@ public class DriveToNoteCommand extends Command {
     @Override
     public void execute() {
         if (!this.pathingCommand.isScheduled() || this.finished) return;
-
-        Pose2d[] notePoses = DetectionSubsystem.getInstance().getRecentNotePoses();
-        if (notePoses.length == 0) {
-            return; // Go by last known note position
+        
+        // Run this check every 5 robot cycles / 3 Detection cycles
+        if (this.timer.hasElapsed(0.1)) {
+            this.timer.restart();
+        }
+        else {
+            return;
         }
 
+        Pose2d[] notePoses = DetectionSubsystem.getInstance().getRecentNotePoses();
+        // Note is stale by over 1.5 s so it has been discarded.
+        // Go by last known note position. 
+        if (notePoses.length == 0) {
+            return;
+        }
         Pose2d newNotePose = notePoses[0];
-        double error = this.currentNotePose.getTranslation().getDistance(newNotePose.getTranslation());
 
-        // TODO 3.f : After testing, remove this line.
-        System.out.printf("Error : %.3f%n", error);
-
-        // Make sure it's still targeting the same note
-        // Error should be between 0.15 and 0.35 meters before it updates
-        if (0.15 <= error && error <= 0.35) {
-            // If it's close, then the error is probably faulty data due to the
-            // note getting cut off the screen by being too close.
-            if (CommandSwerveDrivetrain.getInstance().getState().Pose.getTranslation()
-                .getDistance(firstNotePose.getTranslation()) <= 1
-            ) {
-                return;
-            }
-            System.out.printf("Re-pathing count : %f%n", (float) ++rePathingCount);
-            
+        // If within 1 meter, the path should be nearly perfect.
+        if (CommandSwerveDrivetrain.getInstance().getState().Pose.getTranslation()
+            .getDistance(newNotePose.getTranslation()) <= 1
+        ) {
+            return;
+        }
+        // If deviated over 15 cm from the original Note, repath
+        else if (this.currentNotePose.getTranslation().getDistance(newNotePose.getTranslation()) >= 0.15) {
             this.currentNotePose = newNotePose;
+            
             CommandScheduler.getInstance().cancel(this.pathingCommand);
-            this.pathingCommand = generatePath(newNotePose);
+            this.pathingCommand = generatePath(this.currentNotePose);
             CommandScheduler.getInstance().schedule(this.pathingCommand);
+            System.out.printf("Re-pathing count : %.1f%n", (float) ++rePathingCount);
         }
     }
 
@@ -104,6 +110,7 @@ public class DriveToNoteCommand extends Command {
         if (this.pathingCommand != null && this.pathingCommand.isScheduled()) {
             CommandScheduler.getInstance().cancel(this.pathingCommand);
         }
+        this.timer.stop();
     }
 
     // Returns true when the command should end.
@@ -122,8 +129,8 @@ public class DriveToNoteCommand extends Command {
 
         // Takes into account angles in quadrants II and III
         Rotation2d faceNoteRot = new Rotation2d(Math.atan2(
-            this.currentNotePose.getY() - botTranslation.getY(),
-            this.currentNotePose.getX() - botTranslation.getX()
+            notePose.getY() - botTranslation.getY(),
+            notePose.getX() - botTranslation.getX()
         ));
 
         Pose2d botPose = new Pose2d(botTranslation, faceNoteRot);

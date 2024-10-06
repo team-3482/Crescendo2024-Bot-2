@@ -12,6 +12,10 @@ import edu.wpi.first.math.geometry.Translation2d;
  * based on distance between x components and y components.
  */
 public class FilteredTranslation {
+    /**
+     * Number of samples to average over.
+     * @see {@link LinearFilter#movingAverage(int)}
+     */
     public static final int TAPS = 15;
     private final LinearFilter xFilter;
     private final LinearFilter yFilter;

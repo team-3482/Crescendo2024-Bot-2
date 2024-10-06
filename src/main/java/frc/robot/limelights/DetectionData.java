@@ -59,6 +59,7 @@ public class DetectionData {
      * @apiNote Within 35 px of the edges.
      */
     private boolean canTrustPitch(double[] yCorners) {
+        // TODO 4 ? Uncrop top of camera and only allow width-based measurements
         return yCorners[0] + 35 < DetectionConstants.SCREEN_HEIGHT;
             // && yCorners[1] - 35 > 0; // Trust pitch close-up
     }

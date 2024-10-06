@@ -210,7 +210,10 @@ public class DetectionSubsystem extends SubsystemBase {
         for (int i = 0; i < this.recentDetectionDatas.size(); i++) {
             if (this.recentDetectionDatas.get(i).timestamp <= timeCutoff) {
                 this.recentDetectionDatas.remove(i);
-                this.recentFilteredTranslations.remove(i--);
+                if (i < this.recentFilteredTranslations.size()) {
+                    this.recentFilteredTranslations.remove(i);
+                }
+                i--;
             }
         }
 
