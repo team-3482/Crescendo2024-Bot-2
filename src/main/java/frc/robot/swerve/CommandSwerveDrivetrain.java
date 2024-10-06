@@ -4,8 +4,6 @@ import java.util.function.Supplier;
 
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrainConstants;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathPlannerAuto;
@@ -13,11 +11,8 @@ import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
 import com.pathplanner.lib.util.PIDConstants;
 import com.pathplanner.lib.util.ReplanningConfig;
 
-import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -32,6 +27,24 @@ import frc.robot.constants.Constants;
  * subsystem so it can be used in command-based projects easily.
  */
 public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsystem {
+    // Thread-safe singleton design pattern.
+    private static volatile CommandSwerveDrivetrain instance;
+    private static Object mutex = new Object();
+
+    public static CommandSwerveDrivetrain getInstance() {
+        CommandSwerveDrivetrain result = instance;
+        
+        if (result == null) {
+            synchronized (mutex) {
+                result = instance;
+                if (result == null) {
+                    instance = result = new CommandSwerveDrivetrain();
+                }
+            }
+        }
+        return instance;
+    }
+
     private static final double kSimLoopPeriod = 0.005; // 5 ms
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
@@ -45,20 +58,14 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 
     private final SwerveRequest.ApplyChassisSpeeds AutoRequest = new SwerveRequest.ApplyChassisSpeeds();
 
-    private volatile SwerveDrivePoseEstimator m_odometry;
-
-    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency, SwerveModuleConstants... modules) {
-        super(driveTrainConstants, OdometryUpdateFrequency, modules);
+    private CommandSwerveDrivetrain() {
+        super(TunerConstants.DrivetrainConstants,
+            TunerConstants.FrontLeft,
+            TunerConstants.FrontRight,
+            TunerConstants.BackLeft,
+            TunerConstants.BackRight
+        );
         configurePathPlanner();
-        if (Utils.isSimulation()) {
-            startSimThread();
-        }
-    }
-
-    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, SwerveModuleConstants... modules) {
-        super(driveTrainConstants, modules);
-        configurePathPlanner();
-        m_odometry = super.m_odometry;
         if (Utils.isSimulation()) {
             startSimThread();
         }
@@ -129,50 +136,6 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
                         RedAlliancePerspectiveRotation : BlueAlliancePerspectiveRotation);
                 hasAppliedOperatorPerspective = true;
             });
-        }
-    }
-
-    /**
-     * Adds a vision measurement to the Kalman Filter. This will correct the
-     * odometry pose estimate
-     * while still accounting for measurement noise.
-     *
-     * <p>
-     * This method can be called as infrequently as you want, as long as you are
-     * calling {@link
-     * SwerveDrivePoseEstimator#update} every loop.
-     *
-     * <p>
-     * To promote stability of the pose estimate and make it robust to bad vision
-     * data, we
-     * recommend only adding vision measurements that are already within one meter
-     * or so of the
-     * current pose estimate.
-     *
-     * @param visionRobotPoseMeters The pose of the robot as measured by the vision
-     *                              camera.
-     * @param timestampSeconds      The timestamp of the vision measurement in
-     *                              seconds. Note that if you
-     *                              don't use your own time source by calling {@link
-     *                              SwerveDrivePoseEstimator#updateWithTime(double,Rotation2d,SwerveModulePosition[])}
-     *                              then you
-     *                              must use a timestamp with an epoch since FPGA
-     *                              startup (i.e., the epoch of this timestamp is
-     *                              the same epoch as
-     *                              {@link edu.wpi.first.wpilibj.Timer#getFPGATimestamp()}.)
-     *                              This means that
-     *                              you should use
-     *                              {@link edu.wpi.first.wpilibj.Timer#getFPGATimestamp()}
-     *                              as your time source
-     *                              or sync the epochs.
-     */
-    @Override
-    public synchronized void addVisionMeasurement(Pose2d visionRobotPoseMeters, double timestampSeconds) {
-        try {
-            m_stateLock.writeLock().lock();
-            m_odometry.addVisionMeasurement(visionRobotPoseMeters, timestampSeconds);
-        } finally {
-            m_stateLock.writeLock().unlock();
         }
     }
 

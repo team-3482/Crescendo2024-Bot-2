@@ -16,7 +16,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.limelights.DetectionSubsystem;
-import frc.robot.swerve.TunerConstants;
+import frc.robot.swerve.CommandSwerveDrivetrain;
 
 /**
  * A command that wraps a PathPlanner command that
@@ -84,7 +84,7 @@ public class DriveToNoteCommand extends Command {
         if (0.15 <= error && error <= 0.35) {
             // If it's close, then the error is probably faulty data due to the
             // note getting cut off the screen by being too close.
-            if (TunerConstants.DriveTrain.getState().Pose.getTranslation()
+            if (CommandSwerveDrivetrain.getInstance().getState().Pose.getTranslation()
                 .getDistance(firstNotePose.getTranslation()) <= 1
             ) {
                 return;
@@ -118,7 +118,7 @@ public class DriveToNoteCommand extends Command {
      * @return The PathPlanner Command.
      */
     private Command generatePath(Pose2d notePose) {
-        Translation2d botTranslation = TunerConstants.DriveTrain.getState().Pose.getTranslation();
+        Translation2d botTranslation = CommandSwerveDrivetrain.getInstance().getState().Pose.getTranslation();
 
         // Takes into account angles in quadrants II and III
         Rotation2d faceNoteRot = new Rotation2d(Math.atan2(

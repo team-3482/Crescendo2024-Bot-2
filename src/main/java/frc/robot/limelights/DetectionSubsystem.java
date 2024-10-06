@@ -29,7 +29,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.LimelightConstants;
 import frc.robot.constants.LimelightConstants.DetectionConstants;
-import frc.robot.swerve.TunerConstants;
+import frc.robot.swerve.CommandSwerveDrivetrain;
+import frc.robot.utilities.FilteredTranslation;
 
 /** A class that manages note detection and associated calculations. */
 public class DetectionSubsystem extends SubsystemBase {
@@ -55,6 +56,7 @@ public class DetectionSubsystem extends SubsystemBase {
     private final Notifier notifier;
 
     private volatile ArrayList<DetectionData> recentDetectionDatas = new ArrayList<DetectionData>();
+    private volatile ArrayList<FilteredTranslation> recentFilteredTranslations = new ArrayList<FilteredTranslation>();
 
     /* What to publish over networktables for telemetry */
     private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
@@ -114,11 +116,12 @@ public class DetectionSubsystem extends SubsystemBase {
 
     /**
      * This method is used in conjunction with a Notifier to run detection processing on a separate thread.
+     * @see _ Trust : {@link DetectionData#canTrustData()}
+     * <li> Processing : {@link DetectionSubsystem#processRecentDetectionDatas()}
+     * @apiNote Will add trusted DetectionData and always process current DetectionData.
      */
     private synchronized void notifierLoop() {
         DetectionData[] detectionDatasArray = getDetectionDatas();
-        if (detectionDatasArray.length == 0) return;
-
         ArrayList<DetectionData> detectionDatasList = new ArrayList<DetectionData>();
 
         for (DetectionData data : detectionDatasArray) {
@@ -128,28 +131,150 @@ public class DetectionSubsystem extends SubsystemBase {
         }
 
         if (detectionDatasList.size() != 0) {
-            this.recentDetectionDatas = detectionDatasList;
+            // Don't replace stale data, it will get cleared in
+            // {@link DetectionSubsystem#processRecentDetectionDatas} if too stale.
+            double recentSize = this.recentDetectionDatas.size();
+            for (int i = 0; i < detectionDatasList.size(); i++) {
+                if (i < recentSize) {
+                    this.recentDetectionDatas.set(i, detectionDatasList.get(i));
+                }
+                else {
+                    this.recentDetectionDatas.add(i, detectionDatasList.get(i));
+                }
+            }
 
-            if (DetectionConstants.PUBLISH_NOTE_POSES) {
-                Pose2d[] recentNotePoses = getRecentNotePoses();
-                if (recentNotePoses.length >= 3) {
-                    this.note3.set(pose2dToDoubleArray(recentNotePoses[2]));
-                }
-                if (recentNotePoses.length >= 2) {
-                    this.note2.set(pose2dToDoubleArray(recentNotePoses[1]));
-                }
-                if (recentNotePoses.length >= 1) {
+            // Process the updated data (for the FilteredTranslations)
+            processRecentDetectionDatas(false);
+        }
+        // Just clear stale data if there is any
+        else {
+            processRecentDetectionDatas(true);
+        }
+
+        if (DetectionConstants.PUBLISH_NOTE_POSES) {
+            Pose2d[] recentNotePoses = getRecentNotePoses();
+            
+            switch (recentNotePoses.length) {
+                case 0:
+                    this.note3.set(new double[0]);
+                    this.note2.set(new double[0]);
+                    this.note1.set(new double[0]);
+                    break;
+                case 1:
+                    this.note3.set(new double[0]);
+                    this.note2.set(new double[0]);
                     this.note1.set(pose2dToDoubleArray(recentNotePoses[0]));
-                }
+                    break;
+                case 2:
+                    this.note3.set(new double[0]);
+                    this.note2.set(pose2dToDoubleArray(recentNotePoses[1]));
+                    this.note1.set(pose2dToDoubleArray(recentNotePoses[0]));
+                    break;
+                default:
+                    this.note3.set(pose2dToDoubleArray(recentNotePoses[2]));
+                    this.note2.set(pose2dToDoubleArray(recentNotePoses[1]));
+                    this.note1.set(pose2dToDoubleArray(recentNotePoses[0]));
+                    break;    
             }
         }
 
         this.fieldTypePub.set("Field2d");
-
-        // Update top 3 Notes to Shuffleboard
-
     }
-    
+
+    /**
+     * Gets the recently saved note positions.
+     * @return The recently calculated note positions.
+     * @apiNote Uses data up to {@link DetectionConstants#STALE_DATA_CUTOFF} seconds old.
+     */
+    public synchronized Pose2d[] getRecentNotePoses() {
+        Pose2d[] recentNotePoses = new Pose2d[this.recentFilteredTranslations.size()];
+        
+        for (int i = 0; i < recentNotePoses.length; i++) {
+            recentNotePoses[i] = new Pose2d(
+                this.recentFilteredTranslations.get(i).getLastTranslation(),
+                new Rotation2d()
+            );
+        }
+        
+        return recentNotePoses;
+    }
+
+    /**
+     * A helper that updates {@link DetectionSubsystem#recentFilteredTranslations}
+     * based on {@link DetectionSubsystem#recentDetectionDatas}.
+     * @param onlyClearStale - Whether or not to only clear stale data and not calculate new translations.
+     */
+    private synchronized void processRecentDetectionDatas(boolean onlyClearStale) {
+        // Remove any stale DetectionData
+        double timeCutoff = Timer.getFPGATimestamp() - DetectionConstants.STALE_DATA_CUTOFF;
+        for (int i = 0; i < this.recentDetectionDatas.size(); i++) {
+            if (this.recentDetectionDatas.get(i).timestamp <= timeCutoff) {
+                this.recentDetectionDatas.remove(i);
+                this.recentFilteredTranslations.remove(i--);
+            }
+        }
+
+        // Clear any extra Notes from storage
+        while (this.recentFilteredTranslations.size() > this.recentDetectionDatas.size()) {
+            this.recentFilteredTranslations.remove(this.recentFilteredTranslations.size() - 1);
+        }
+
+        // If there was no new DetectionData, don't reprocess current data or
+        // it will mislead the linear filters with repetitive data.
+        if (onlyClearStale) return;
+
+        boolean updatedShuffleboard = false;
+
+        for (int i = 0; i < this.recentDetectionDatas.size(); i++) {
+            DetectionData data = this.recentDetectionDatas.get(i);
+            
+            double widthDistance = getDistanceFromWidth(data.width, data.tx);
+            double pitchDistance = getDistanceFromPitch(data.ty);
+
+            // Only update Shuffleboard data for the closest trustworthy Note
+            if (!updatedShuffleboard && data.canTrustData) {
+                this.widthDistanceEntry.setDouble(widthDistance);
+                this.pitchDistanceEntry.setDouble(pitchDistance);
+                updatedShuffleboard = true;
+            }
+
+            double distance;
+
+            if (data.canTrustWidth) {
+                distance = widthDistance;
+            }
+            else if (data.canTrustPitch) {
+                distance = pitchDistance;
+            }
+            else {
+                continue;
+            }
+
+            if (distance <= DetectionConstants.MAX_NOTE_DISTANCE_TRUST) {
+                Translation2d noteTranslation = getNoteTranslation(distance, data.tx);
+                
+                if (i >= this.recentFilteredTranslations.size()) {
+                    this.recentFilteredTranslations.add(new FilteredTranslation(noteTranslation));
+                }
+                else {
+                    Translation2d calculatedTranslation = this.recentFilteredTranslations.get(i).getNextTranslation(noteTranslation);
+                    
+                    // If over 1 meter of error, then the noteTranslation is probably a new Note.
+                    // Thus, the filter is reinitialized to the new translation.
+                    if (noteTranslation.getDistance(calculatedTranslation) >= 1) {
+                        this.recentFilteredTranslations.set(i, new FilteredTranslation(noteTranslation));
+                    }
+                }
+            }
+        }
+
+        if (!updatedShuffleboard) {
+            this.widthDistanceEntry.setDouble(0);
+            this.pitchDistanceEntry.setDouble(0);
+            return;
+        }
+    }
+
     /**
      * Helper that turns a Pose2d into a NetworkTables-readable double array.
      * @param pose - The pose to convert.
@@ -163,47 +288,6 @@ public class DetectionSubsystem extends SubsystemBase {
             pose.getRotation().getRadians()
         };
     }
-
-    /**
-     * Gets the recently saved note positions.
-     * @return The recently calculated note positions.
-     * @apiNote If there is no new data, it uses data up to 5 seconds old.
-     * New data always replaces old data.
-     */
-    public synchronized Pose2d[] getRecentNotePoses() { // TODO : Separate Shuffleboard part into Notifier
-        ArrayList<Pose2d> notePosesList = new ArrayList<Pose2d>();
-        this.widthDistanceEntry.setDouble(0);
-        this.pitchDistanceEntry.setDouble(0);
-        
-        for (DetectionData data : this.recentDetectionDatas) {
-            if (data.timestamp >= Timer.getFPGATimestamp() - DetectionConstants.STALE_DATA_CUTOFF) {
-                double distance;
-                double widthDistance = getDistanceFromWidth(data.width, data.tx);
-                double pitchDistance = getDistanceFromPitch(data.ty);
-                
-                if (data.canTrustWidth) {
-                    distance = widthDistance;
-                }
-                else if (data.canTrustPitch) {
-                    distance = pitchDistance;
-                }
-                else {
-                    this.widthDistanceEntry.setDouble(0);
-                    this.pitchDistanceEntry.setDouble(0);
-                    continue;
-                }
-
-                if (distance <= DetectionConstants.MAX_NOTE_DISTANCE_TRUST) {
-                    this.widthDistanceEntry.setDouble(widthDistance);
-                    this.pitchDistanceEntry.setDouble(pitchDistance);
-                    notePosesList.add(getNotePose(distance, data.tx));
-                }
-            }
-        }
-        
-        return notePosesList.toArray(new Pose2d[notePosesList.size()]);
-    }
-
 
     /**
      * Helper that sorts detection data and returns an array of detected Notes.
@@ -284,14 +368,12 @@ public class DetectionSubsystem extends SubsystemBase {
     }
 
     /**
-     * Calculates the Pose2d of a note in field space.
+     * Calculates the Translation2d of a note in field space.
      * @param distance - The distance to the note from the camera.
      * @param tx - Raw tx from the camera in degrees.
-     * @return The Pose of the note.
-     * @apiNote The Rotation2d component of this Pose2d is the heading that
-     * the bot needs to face this Note based on the Limelight's tx only.
+     * @return The Translation2d of the note.
      */
-    private Pose2d getNotePose(double distance, double tx) {
+    private Translation2d getNoteTranslation(double distance, double tx) {
         double yaw = Math.PI / 2 + DetectionConstants.LIMELIGHT_POSITION.getRotation().getZ();
         double theta = yaw + Units.degreesToRadians(tx);
         boolean over90Deg = false;
@@ -301,7 +383,7 @@ public class DetectionSubsystem extends SubsystemBase {
             over90Deg = true;
         }
 
-        Pose2d botPose = TunerConstants.DriveTrain.getState().Pose;
+        Pose2d botPose = CommandSwerveDrivetrain.getInstance().getState().Pose;
         
         Translation2d cameraToNote = new Translation2d(
             distance * Math.sin(theta),
@@ -323,14 +405,11 @@ public class DetectionSubsystem extends SubsystemBase {
             dBotToNote * Math.sin(theta2)
         );
 
-        Pose2d notePose = new Pose2d(
-            new Translation2d(
-                botPose.getX() + botToNoteFieldSpace.getX(), 
-                botPose.getY() + botToNoteFieldSpace.getY() 
-            ),
-            new Rotation2d()
+        Translation2d noteTranslation = new Translation2d(
+            botPose.getX() + botToNoteFieldSpace.getX(), 
+            botPose.getY() + botToNoteFieldSpace.getY() 
         );
 
-        return notePose;
+        return noteTranslation;
     }
 }

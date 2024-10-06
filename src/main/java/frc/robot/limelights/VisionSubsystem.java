@@ -23,7 +23,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.LimelightConstants;
 import frc.robot.constants.LimelightConstants.VisionConstants;
-import frc.robot.swerve.TunerConstants;
+import frc.robot.swerve.CommandSwerveDrivetrain;
 
 /** 
  * A class that manages AprilTag Limelights for vision.
@@ -116,8 +116,8 @@ public class VisionSubsystem extends SubsystemBase {
         for (VisionData data : filteredLimelightDatas) {
             if (data.canTrustRotation) {
                 // Only trust rotational data when adding this pose.
-                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(9999999, 9999999, 1));
-                TunerConstants.DriveTrain.addVisionMeasurement(
+                CommandSwerveDrivetrain.getInstance().setVisionMeasurementStdDevs(VecBuilder.fill(9999999, 9999999, 1));
+                CommandSwerveDrivetrain.getInstance().addVisionMeasurement(
                     data.MegaTag.pose,
                     data.MegaTag.timestampSeconds
                 );
@@ -125,8 +125,8 @@ public class VisionSubsystem extends SubsystemBase {
 
             if (data.canTrustPosition) {
                 // Only trust positional data when adding this pose.
-                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(1, 1, 9999999));
-                TunerConstants.DriveTrain.addVisionMeasurement(
+                CommandSwerveDrivetrain.getInstance().setVisionMeasurementStdDevs(VecBuilder.fill(1, 1, 9999999));
+                CommandSwerveDrivetrain.getInstance().addVisionMeasurement(
                     data.MegaTag2.pose,
                     data.MegaTag2.timestampSeconds
                 );
@@ -152,7 +152,7 @@ public class VisionSubsystem extends SubsystemBase {
 
         // Periodic logic
         if (!useStored) {
-            double rotationDegrees = TunerConstants.DriveTrain.getState().Pose.getRotation().getDegrees();
+            double rotationDegrees = CommandSwerveDrivetrain.getInstance().getState().Pose.getRotation().getDegrees();
             LimelightHelpers.SetRobotOrientation(LimelightConstants.FRONT_APRIL_TAG_LL,
                 rotationDegrees, 0, 0, 0, 0, 0
             );
@@ -177,7 +177,7 @@ public class VisionSubsystem extends SubsystemBase {
                 this.lastHeartbeatBackLL = heartbeatBackLL == -1 ? this.lastHeartbeatBackLL : heartbeatBackLL;
             }
 
-            ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
+            ChassisSpeeds robotChassisSpeeds = CommandSwerveDrivetrain.getInstance().getCurrentRobotChassisSpeeds();
             double velocity = Math.sqrt(Math.pow(robotChassisSpeeds.vxMetersPerSecond, 2) + Math.pow(robotChassisSpeeds.vyMetersPerSecond, 2));
             // If the bot's angular velocity is greater than 270 deg/s, translational velocity is over 2 m/s,
             // or for both LLs the data is outdated or has no data, ignore vision updates.
@@ -437,7 +437,7 @@ public class VisionSubsystem extends SubsystemBase {
             return new Pose2d(
                 filteredLimelightDatas[0].MegaTag2.pose.getTranslation(),
                 filteredLimelightDatas[0].canTrustRotation ?
-                    filteredLimelightDatas[0].MegaTag.pose.getRotation() : TunerConstants.DriveTrain.getState().Pose.getRotation()
+                    filteredLimelightDatas[0].MegaTag.pose.getRotation() : CommandSwerveDrivetrain.getInstance().getState().Pose.getRotation()
             );
         }
         else {
@@ -456,7 +456,7 @@ public class VisionSubsystem extends SubsystemBase {
                     // Ex : 180+180=0 followed by 0/2=0 when it should be 180+180=360 and 360/2=180.
                     filteredLimelightDatas[0].MegaTag.pose.getRotation().div(2)
                         .plus(filteredLimelightDatas[1].MegaTag.pose.getRotation().div(2)) :
-                    TunerConstants.DriveTrain.getState().Pose.getRotation()
+                    CommandSwerveDrivetrain.getInstance().getState().Pose.getRotation()
             );
         }
     }

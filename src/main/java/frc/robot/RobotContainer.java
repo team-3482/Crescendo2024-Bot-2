@@ -90,7 +90,7 @@ public class RobotContainer {
      * This is based on the {@code Phoenix6 Swerve Example} that can be found on GitHub.
      */
     private void configureDrivetrain() {
-        final CommandSwerveDrivetrain drivetrain = TunerConstants.DriveTrain;
+        final CommandSwerveDrivetrain drivetrain = CommandSwerveDrivetrain.getInstance();
         final double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps;
         final double MaxAngularRate = TunerConstants.kAngularSpeedMaxRadps;
         final double reasonableMaxSpeed = MaxSpeed * 0.5;
@@ -348,7 +348,7 @@ public class RobotContainer {
          *    POV (overrides joys) : Directional movement -- 0.25 m/s
          */
         this.driverController.back().onTrue(
-            TunerConstants.DriveTrain.runOnce(() -> TunerConstants.DriveTrain.seedFieldRelative(
+            CommandSwerveDrivetrain.getInstance().runOnce(() -> CommandSwerveDrivetrain.getInstance().seedFieldRelative(
                 new Pose2d(new Translation2d(5, 5), new Rotation2d())
             ))
         );

@@ -19,22 +19,25 @@ public class FilteredTranslation {
     private double lastY;
 
     /**
-     * Constructs a FilteredTranslation with X and Y components equal to zero.
-     */
-    public FilteredTranslation() {
-        this(0, 0);
-    }
-
-    /**
      * Constructs a FilteredTranslation with the X and Y components equal to the provided values.
      * @param x The x component of the translation.
      * @param y The y component of the translation.
      */
     public FilteredTranslation(double x, double y) {
         this.xFilter = LinearFilter.movingAverage(FilteredTranslation.TAPS);
-        this.lastX = this.xFilter.calculate(x);
         this.yFilter = LinearFilter.movingAverage(FilteredTranslation.TAPS);
-        this.lastY = this.yFilter.calculate(y);
+        
+        // These calls are expensive but I am unsure if there is a better way to
+        // set a brand new LinearFilter to a value ?
+        
+        // Limiter because filter won't return exactly x to every decimal and
+        // a while loop would run infinitely.
+        for (int limiter = 0; limiter < FilteredTranslation.TAPS && this.lastX != x; limiter++) {
+            this.lastX = this.xFilter.calculate(x);
+        }
+        for (int limiter = 0; limiter < FilteredTranslation.TAPS && this.lastY != y; limiter++) {
+            this.lastY = this.yFilter.calculate(y);
+        }
     }
 
     /**
@@ -42,10 +45,14 @@ public class FilteredTranslation {
      * @param translation - The translation to use.
      */
     public FilteredTranslation(Translation2d translation) {
-        this.xFilter = LinearFilter.movingAverage(FilteredTranslation.TAPS);
-        this.lastX = this.xFilter.calculate(translation.getX());
-        this.yFilter = LinearFilter.movingAverage(FilteredTranslation.TAPS);
-        this.lastY = this.yFilter.calculate(translation.getY());
+        this(translation.getX(), translation.getY());
+    }
+
+    /**
+     * Constructs a FilteredTranslation with X and Y components equal to zero.
+     */
+    public FilteredTranslation() {
+        this(0, 0);
     }
 
     /**

@@ -3,7 +3,7 @@ package frc.robot.limelights;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import frc.robot.constants.LimelightConstants.DetectionConstants;
-import frc.robot.swerve.TunerConstants;
+import frc.robot.swerve.CommandSwerveDrivetrain;
 
 /**
  * <p>A helper class used for storing detection data for Notes.
@@ -26,21 +26,19 @@ public class DetectionData {
      * all booleans will be false and all doubles will be 0.
      */
     public DetectionData(double tx, double ty, double[] xCorners, double[] yCorners, double timestamp) {
-        this.canTrustData = canTrustData();
+        // These are calculated when the measurement is created
+        this.canTrustWidth = canTrustWidth(xCorners);
+        this.canTrustPitch = canTrustPitch(yCorners);
+        this.canTrustData = canTrustData() && (this.canTrustWidth || this.canTrustPitch);
         
         if (!this.canTrustData) {
             this.tx = this.ty = this.width = this.timestamp = 0;
-            this.canTrustPitch = this.canTrustWidth = false;
         }
         else {
             this.tx = tx;
             this.ty = ty;
             this.width = xCorners[1] - xCorners[0]; // Top right - Top left
             this.timestamp = timestamp;
-    
-            // These are calculated when the measurement is created
-            this.canTrustWidth = canTrustWidth(xCorners);
-            this.canTrustPitch = canTrustPitch(yCorners);
         }
     }
 
@@ -72,7 +70,7 @@ public class DetectionData {
      * @apiNote Angular <= 160 deg/s ; Translational <= 2 m/s.
      */
     private boolean canTrustData() {
-        ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
+        ChassisSpeeds robotChassisSpeeds = CommandSwerveDrivetrain.getInstance().getCurrentRobotChassisSpeeds();
         double velocity = Math.sqrt(Math.pow(robotChassisSpeeds.vxMetersPerSecond, 2) + Math.pow(robotChassisSpeeds.vyMetersPerSecond, 2));
         return Units.radiansToDegrees(robotChassisSpeeds.omegaRadiansPerSecond) <= 160
             && velocity <= 2;
