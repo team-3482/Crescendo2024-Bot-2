@@ -4,10 +4,16 @@
 
 package frc.robot.constants;
 
+import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
+import com.ctre.phoenix6.mechanisms.swerve.utility.PhoenixPIDController;
+
 /**
  * Constants used throughout the code that are not categorized in other constants files.
  */
 public final class Constants {
+    /** Constants used for maintaining a heading when using {@link SwerveRequest#FieldCentricFacingAngle} */
+    public static final PhoenixPIDController HeadingControllerFacingAngle = new PhoenixPIDController(5.5, 0, 0.1);
+    
     /**
      * Tab names in Shuffleboard.
      */
