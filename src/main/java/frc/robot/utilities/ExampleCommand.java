@@ -14,7 +14,7 @@ public class ExampleCommand extends Command {
     public ExampleCommand() {
         setName("ExampleCommand");
         // Use addRequirements() here to declare subsystem dependencies.
-        addRequirements();
+        addRequirements(ExampleSubsystem.getInstance());
     }
 
     // Called when the command is initially scheduled.

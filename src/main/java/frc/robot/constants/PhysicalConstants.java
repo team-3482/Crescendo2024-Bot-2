@@ -16,4 +16,115 @@ public final class PhysicalConstants {
         /** Name of the CTRE CAN bus (configured on the CANivore). */
         public static final String CTRE_CAN_BUS = "ctre";
     }
+
+    /** Constants for the IntakeSubsystem. */
+    public static final class IntakeConstants {
+        public static final int LEFT_INTAKE_MOTOR_ID = 20;
+        public static final int RIGHT_INTAKE_MOTOR_ID = 21;
+        public static final int BEAM_BREAK_LASER_CHANNEL = 8;
+
+        // TODO INTAKE 4 : Test with notes for best intaking velocity
+        /** The velocity with which to intake in rot/s. */
+        public static final double IDEAL_INTAKE_VELOCITY = 0;
+
+        /** This is the gear ratio from the sensor to the rollers. */
+        public static final double ROTOR_TO_MECHANISM_RATIO = 4; // 4:1 gearbox
+
+        // TODO INTAKE 3 : Velocity tolerance
+        /** Tolerance for Commands using MotionMagic in rot/s. */
+        public static final double VELOCITY_TOLERANCE = 0;
+
+        // TODO INTAKE 2 : Tune MotionMagic
+        /** Gains used for MotionMagic slot 0. */
+        public static final class IntakeSlot0Gains {
+            public static final double kG = 0;
+            public static final double kS = 0;
+            public static final double kV = 0;
+            public static final double kA = 0;
+            public static final double kP = 0;
+            public static final double kI = 0;
+            public static final double kD = 0;
+        }
+
+        // TODO INTAKE 1 : Find max speed/accel
+        /* More constants used with MotionMagic. */
+        /**
+         * Max mechanism rotations per second.
+         * This value is not used for MotionMagicVelocity.
+         * It is only here as a reminder.
+         */
+        public static final double CRUISE_SPEED = 0;
+        /** Max mechanism rotations per second^2. */
+        public static final double ACCELERATION = 0;
+    }
+
+    /** Constants for the ShooterSubsystem. */
+    public static final class ShooterConstants {
+        public static final int TOP_SHOOTER_MOTOR_ID = 31;
+        public static final int BOTTOM_SHOOTER_MOTOR_ID = 30;
+
+        /** This is the gear ratio from the sensor to the rollers. */
+        public static final double ROTOR_TO_MECHANISM_RATIO = (double) 25 / 9; // 50:18
+
+        /** Tolerance for Commands using MotionMagic in rot/s. */
+        public static final double VELOCITY_TOLERANCE = 0.35;
+
+        /** Gains used for MotionMagic slot 0. */
+        public static final class ShooterSlot0Gains {
+            public static final double kG = 0;
+            public static final double kS_BottomMotor = 0.25;
+            public static final double kS_TopMotor = 0.4;
+            public static final double kV = 0.33;
+            public static final double kA = 0;
+            public static final double kP = 1.3;
+            public static final double kI = 0;
+            public static final double kD = 0;
+        }
+
+        /* More constants used with MotionMagic. */
+        /**
+         * Max mechanism rotations per second.
+         * This value is not used for MotionMagicVelocity.
+         * It is only here as a reminder.
+         */
+        public static final double CRUISE_SPEED = 30;
+        /** Max mechanism rotations per second^2 */
+        public static final double ACCELERATION = 100;
+    }
+
+    /** Constants for the PivotSubsystem. */
+    public static final class PivotConstants {
+        public static final int LEFT_PIVOT_MOTOR_ID = 40;
+        public static final int RIGHT_PIVOT_MOTOR_ID = 41;
+
+        /** Upper soft stop angle in degrees. */
+        public static final double UPPER_ANGLE_LIMIT = 90;
+        /** Any angle below this would shoot a note into the back Limelight. */
+        public static final double ABOVE_LIMELIGHT_ANGLE = 6;
+        /** Lower soft stop angle in degrees. */
+        public static final double LOWER_HARD_STOP = 2.796678; // Hard stop
+        
+        /** This is the gear ratio from the sensor to the pivot. */
+        public static final double ROTOR_TO_MECHANISM_RATIO = 100; // 5:1 -> 2:1 -> 10 : 1 = 100:1
+        
+        /** Tolerance for Commands using MotionMagic in degrees. */
+        public static final double POSITION_TOLERANCE = 0.5;
+
+        /** Gains used for MotionMagic slot 0. */
+        public static final class PivotSlot0Gains {
+            public static final double kG = 0.24;
+            public static final double kS = 0.1;
+            public static final double kV = 0;
+            public static final double kA = 0;
+            public static final double kP = 512;
+            public static final double kI = 0;
+            public static final double kD = 8;
+        }
+
+        /* More constants used with MotionMagic. */
+        /** Max mechanism rotations per second. */
+        public static final double CRUISE_SPEED = 0.5;
+        /** Max mechanism rotations per second^2 (any higher causes the bot to move). */
+        public static final double ACCELERATION = 1.25;
+    }
 }

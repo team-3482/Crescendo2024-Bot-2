@@ -24,8 +24,13 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
+import frc.robot.intake.IntakeSubsystem;
 import frc.robot.limelights.DetectionSubsystem;
 import frc.robot.limelights.VisionSubsystem;
+import frc.robot.pivot.ManuallyPivotCommand;
+import frc.robot.pivot.PivotSubsystem;
+import frc.robot.pivot.ResetAtHardstopCommand;
+import frc.robot.shooter.ShooterSubsystem;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
@@ -58,7 +63,10 @@ public class RobotContainer {
     private final SendableChooser<Command> autoChooser;
     // Position chooser
     private final SendableChooser<PositionInitialization> positionChooser = new SendableChooser<PositionInitialization>();
-    private final ShuffleboardLayout layout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT).getLayout("SwerveSubsystem", BuiltInLayouts.kList);
+    private final ShuffleboardLayout layout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+        .getLayout("SwerveSubsystem", BuiltInLayouts.kList)
+        .withSize(2, 3)
+        .withProperties(Map.of("Number of columns", 1, "Number of rows", 2, "Label position", "TOP"));
 
     // Instance of the controllers used to drive the robot
     private CommandXboxController driverController;
@@ -311,19 +319,25 @@ public class RobotContainer {
         );
 
         this.layout.add("Starting Position", this.positionChooser)
-            .withWidget(BuiltInWidgets.kComboBoxChooser);
+            .withWidget(BuiltInWidgets.kComboBoxChooser)
+            .withPosition(0, 0);
         // Re-set chosen position.
         this.layout.add("Set Starting Position",
             Commands.runOnce(
                 () -> drivetrain.seedFieldRelative(Positions.getStartingPose(this.positionChooser.getSelected()))
             ).ignoringDisable(true).withName("Set Again"))
-            .withWidget(BuiltInWidgets.kCommand);
+            .withWidget(BuiltInWidgets.kCommand)
+            .withPosition(0, 1);
     }
 
     /** Creates instances of each subsystem so periodic runs */
     private void initializeSubsystems() {
         VisionSubsystem.getInstance();
         DetectionSubsystem.getInstance();
+
+        IntakeSubsystem.getInstance();
+        PivotSubsystem.getInstance();
+        ShooterSubsystem.getInstance();
     }
 
     /** Register all NamedCommands for PathPlanner use */
@@ -331,7 +345,10 @@ public class RobotContainer {
         
     }
 
-    /** Configures the button bindings of the driver controller */
+    /**
+     * Configures the button bindings of the driver controller
+     * @apiNote POV, joysticks, and start / back are all used in {@link RobotContainer#configureDrivetrain()}
+     */
     private void configureDriverBindings() {
         // Cancel all currently scheduled commands
         this.driverController.b().onTrue(Commands.runOnce(() -> {
@@ -371,12 +388,49 @@ public class RobotContainer {
 
     /** Configures the button bindings of the driver controller */
     private void configureOperatorBindings() {
-        // Unused while building and testing new kraken swerve drive
-        
         // Cancel all currently scheduled commands
-        // operatorController.b().onTrue(Commands.runOnce(() -> {
-        //     CommandScheduler.getInstance().cancelAll();
-        // }));
+        operatorController.b().onTrue(Commands.runOnce(() -> {
+            CommandScheduler.getInstance().cancelAll();
+        }));
+
+        PivotSubsystem.getInstance().setDefaultCommand(new ManuallyPivotCommand(
+            () -> operatorController.getRightTriggerAxis(),
+            () -> operatorController.getLeftTriggerAxis(),
+            false
+        ));
+        operatorController.a().onTrue(new ResetAtHardstopCommand(true));
+
+        operatorController.pov(0)
+            .whileTrue(PivotSubsystem.getInstance().run(
+                () -> PivotSubsystem.getInstance().motionMagicPosition(90)
+            ));
+        operatorController.pov(180)
+            .whileTrue(PivotSubsystem.getInstance().run(
+                () -> PivotSubsystem.getInstance().motionMagicPosition(5)
+            ));
+        
+        // Testing shooting
+        operatorController.pov(270)
+            .whileTrue(PivotSubsystem.getInstance().run(
+                () -> PivotSubsystem.getInstance().motionMagicPosition(55)
+            ));
+        operatorController.pov(90)
+            .whileTrue(PivotSubsystem.getInstance().runEnd(
+                () -> ShooterSubsystem.getInstance().motionMagicVelocity(30),
+                () -> ShooterSubsystem.getInstance().setSpeed(0)
+            ));
+        
+        // Testing intaking
+        operatorController.rightBumper()
+            .whileTrue(IntakeSubsystem.getInstance().runEnd(
+                () -> IntakeSubsystem.getInstance().motionMagicVelocity(10),
+                () -> ShooterSubsystem.getInstance().setSpeed(0)
+            ));
+        operatorController.leftBumper()
+            .whileTrue(IntakeSubsystem.getInstance().runEnd(
+                () -> IntakeSubsystem.getInstance().motionMagicVelocity(-10),
+                () -> ShooterSubsystem.getInstance().setSpeed(0)
+            ));
     }
 
     /**

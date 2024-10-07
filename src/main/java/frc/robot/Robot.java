@@ -15,7 +15,7 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
-import frc.robot.utilities.BuildConstants;
+import frc.robot.utilities.BuildConstants; // If this file does not exist, build the robot code.
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -33,6 +33,7 @@ public class Robot extends LoggedRobot {
      * This function is run when the robot is first started up and should be used
      * for any initialization code.
      */
+    @SuppressWarnings("resource")
     @Override
     public void robotInit() {
         // Port forward all required LL ports. Necessary for robot connections over ethernet.
@@ -52,14 +53,16 @@ public class Robot extends LoggedRobot {
             Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
             Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
             new PowerDistribution(1, PowerDistribution.ModuleType.kRev); // Enables power distribution logging
-        } else {
+        }
+        else {
             setUseTiming(false); // Run as fast as possible
             String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from AdvantageScope (or prompt the user)
             Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
             Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))); // Save outputs to a new log
         }
     
-        Logger.start();
+        // TODO LOGGING : This is spamming the console "DataLog no file found"
+        // Logger.start();
 
         // Initialize RobotContainer and all subsystems
         RobotContainer.getInstance();
