@@ -35,9 +35,6 @@ public class DriveToNoteCommand extends Command {
     private Pose2d currentNotePose;
     private boolean finished;
 
-    // TODO 3.f : After testing, remove this variable.
-    private int rePathingCount;
-
     /** Creates a new DriveToNoteCommand. */
     public DriveToNoteCommand() {
         setName("DriveToNoteCommand");
@@ -51,7 +48,6 @@ public class DriveToNoteCommand extends Command {
     @Override
     public void initialize() {
         this.finished = false;
-        this.rePathingCount = 0;
         this.timer.restart();
         
         Pose2d[] notePoses = DetectionSubsystem.getInstance().getRecentNotePoses();
@@ -100,7 +96,6 @@ public class DriveToNoteCommand extends Command {
             CommandScheduler.getInstance().cancel(this.pathingCommand);
             this.pathingCommand = generatePath(this.currentNotePose);
             CommandScheduler.getInstance().schedule(this.pathingCommand);
-            System.out.printf("Re-pathing count : %.1f%n", (float) ++rePathingCount);
         }
     }
 

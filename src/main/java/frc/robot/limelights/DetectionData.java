@@ -43,7 +43,7 @@ public class DetectionData {
     }
 
     /**
-     * Checks that the corners of the bounding box are not close to then edge of the screen.
+     * Checks that the corners of the bounding box are not close to the edge of the screen.
      * @param xCorners - The corners to use. [ TL, TR ].
      * @return If the full width is within the screen.
      * @apiNote Within 35 px of the edges.
@@ -53,14 +53,13 @@ public class DetectionData {
             && xCorners[1] + 35 < DetectionConstants.SCREEN_WIDTH;
     }
     /**
-     * Checks that the corners of the bounding box are not close to then edge of the screen.
+     * Checks that the corners of the bounding box are not close to the edge of the screen.
      * @param yCorners - The corners to use. [ TL, BL ].
      * @return If the full height is within the screen.
-     * @apiNote Within 35 px of the edges.
+     * @apiNote Within 15 px of the top edge.
      */
     private boolean canTrustPitch(double[] yCorners) {
-        // TODO 4 ? Uncrop top of camera and only allow width-based measurements
-        return yCorners[0] + 35 < DetectionConstants.SCREEN_HEIGHT;
+        return yCorners[0] + 25 < DetectionConstants.SCREEN_HEIGHT;
             // && yCorners[1] - 35 > 0; // Trust pitch close-up
     }
 

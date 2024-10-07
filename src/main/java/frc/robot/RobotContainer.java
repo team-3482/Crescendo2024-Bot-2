@@ -156,8 +156,7 @@ public class RobotContainer {
                 Pose2d[] notePoses = DetectionSubsystem.getInstance().getRecentNotePoses();
                 Translation2d botTranslation = drivetrain.getState().Pose.getTranslation();
                 
-                // If no Notes OR Note further than 3 meters, drive normally
-                // TODO 2 : Test no distance limit
+                // If no Notes OR Note further than {@link DetectionConstants#MAX_NOTE_DISTANCE_DRIVING} meters, drive normally.
                 if (notePoses.length == 0
                     || notePoses[0].getTranslation().getDistance(botTranslation)
                         >= DetectionConstants.MAX_NOTE_DISTANCE_DRIVING
@@ -347,11 +346,11 @@ public class RobotContainer {
          * Back / Double Rectangle : Reset position to LL data (if not empty)
          *    POV (overrides joys) : Directional movement -- 0.25 m/s
          */
-        this.driverController.back().onTrue(
-            CommandSwerveDrivetrain.getInstance().runOnce(() -> CommandSwerveDrivetrain.getInstance().seedFieldRelative(
-                new Pose2d(new Translation2d(5, 5), new Rotation2d())
-            ))
-        );
+        // this.driverController.back().onTrue(
+        //     CommandSwerveDrivetrain.getInstance().runOnce(() -> CommandSwerveDrivetrain.getInstance().seedFieldRelative(
+        //         new Pose2d(new Translation2d(5, 5), new Rotation2d())
+        //     ))
+        // );
         /*
          * Triggers are also used in configureDrivetrain()
          *      Left Trigger > 0.5 : Use TOP SPEED for joysticks
@@ -367,8 +366,6 @@ public class RobotContainer {
          *     Right bumper (hold) : Targets SPEAKER to rotate around.
          *                           Does NOT shoot (operator's job).
          */
-
-        // TODO 3 : Test driving to a note with a variety of distances / configurations.
         this.driverController.x().onTrue(new DriveToNoteCommand());
     }
 

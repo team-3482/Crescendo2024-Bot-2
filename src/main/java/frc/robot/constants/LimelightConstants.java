@@ -62,7 +62,7 @@ public final class LimelightConstants {
          */
         public static final double MAX_NOTE_DISTANCE_TRUST = 4;
         /** Do not turn towards notes further than this value in meters from the robot. */
-        public static final double MAX_NOTE_DISTANCE_DRIVING = 4;
+        public static final double MAX_NOTE_DISTANCE_DRIVING = 3.5;
 
         /**
          * The real-life outer diameter of a note in meters.
@@ -92,7 +92,7 @@ public final class LimelightConstants {
         /** The width of the screen in pixels, based on resolution. */
         public static final int SCREEN_WIDTH = 1280;
         /** The hieght of the screen in pixels, based on resolution. */
-        public static final int SCREEN_HEIGHT = 960;
+        public static final int SCREEN_HEIGHT = 960 - 144; // Cropped .7 in the +y direction ; 144 = (960 / 2 * 0.3).
 
         /**
          * A formula that attempts to account for the detection error of far-away notes. 
