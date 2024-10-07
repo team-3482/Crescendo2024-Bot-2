@@ -2,7 +2,7 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.vision;
+package frc.robot.limelights;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -10,20 +10,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.HttpCamera;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
-import frc.robot.constants.PhysicalConstants.LimelightConstants;
-import frc.robot.swerve.TunerConstants;
+import frc.robot.constants.LimelightConstants;
+import frc.robot.constants.LimelightConstants.VisionConstants;
+import frc.robot.swerve.CommandSwerveDrivetrain;
 
+/** 
+ * A class that manages AprilTag Limelights for vision.
+ * <p>Optimizes detection for better performance and pushes
+ * position updates to the internal odometer.
+ */
 public class VisionSubsystem extends SubsystemBase {
     // Thread-safe singleton design pattern.
     private static volatile VisionSubsystem instance;
@@ -43,12 +49,15 @@ public class VisionSubsystem extends SubsystemBase {
         return instance;
     }
 
+    /** Used to run vision processing on a separate thread. */
+    private final Notifier notifier;
+
     /** Latest Limelight data. May contain faulty data unsuitable for odometry. */
-    private LimelightData[] limelightDatas = new LimelightData[2];
+    private volatile VisionData[] limelightDatas = new VisionData[2];
     /** Last heartbeat of the front LL (updated every frame) */
-    private long lastHeartbeatFrontLL = 0;
+    private volatile long lastHeartbeatFrontLL = 0;
     /** Last heartbeat of the back LL (updated every frame) */
-    private long lastHeartbeatBackLL = 0;
+    private volatile long lastHeartbeatBackLL = 0;
 
     // Lists used for tag filtering. Final to reduce wasted processing power.
     private final List<Integer> BLUE_SOURCE = Arrays.asList(1, 2, 3, 4);
@@ -62,39 +71,53 @@ public class VisionSubsystem extends SubsystemBase {
     private VisionSubsystem() {
         super("VisionSubsystem");
 
-        // Shuffleboard camera feeds.
-        HttpCamera frontLLCamera = new HttpCamera(
-            LimelightConstants.FRONT_APRIL_TAG_LL,
-            "http://" + LimelightConstants.FRONT_APRIL_TAG_LL + ".local:5800/stream.mjpg"
-        );
-        HttpCamera backLLCamera = new HttpCamera(
-            LimelightConstants.BACK_APRIL_TAG_LL,
-            "http://" + LimelightConstants.BACK_APRIL_TAG_LL + ".local:5800/stream.mjpg"
-        );
+        if (LimelightConstants.PUBLISH_CAMERA_FEEDS) {
+            // Shuffleboard camera feeds.
+            HttpCamera frontLLCamera = new HttpCamera(
+                LimelightConstants.FRONT_APRIL_TAG_LL,
+                "http://" + LimelightConstants.FRONT_APRIL_TAG_LL + ".local:5800/stream.mjpg"
+            );
+            HttpCamera backLLCamera = new HttpCamera(
+                LimelightConstants.BACK_APRIL_TAG_LL,
+                "http://" + LimelightConstants.BACK_APRIL_TAG_LL + ".local:5800/stream.mjpg"
+            );
 
-        Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
-            .add(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLCamera)
-            .withWidget(BuiltInWidgets.kCameraStream)
-            .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
-        Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
-            .add(LimelightConstants.BACK_APRIL_TAG_LL, backLLCamera)
-            .withWidget(BuiltInWidgets.kCameraStream)
-            .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
+            Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+                .add(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLCamera)
+                .withWidget(BuiltInWidgets.kCameraStream)
+                .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
+            Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
+                .add(LimelightConstants.BACK_APRIL_TAG_LL, backLLCamera)
+                .withWidget(BuiltInWidgets.kCameraStream)
+                .withProperties(Map.of("Show Crosshair", false, "Show Controls", false));
+        }
+
+        this.notifier = new Notifier(() -> notifierLoop());
+        this.notifier.setName("Vision Notifier");
+        // Assuming ~40 fps / 25 ms cycle.
+        this.notifier.startPeriodic(0.025);
     }
 
     // This method will be called once per scheduler run
     @Override
     public void periodic() {
-        // This method gets data in about 4 to 8 ms.
-        LimelightData[] filteredLimelightDatas = getFilteredLimelightData(false);
+        // Uses a Notifier for separate-thread Vision processing
+    }
 
+    /**
+     * This method is used in conjunction with a Notifier to run vision processing on a separate thread.
+     */
+    private synchronized void notifierLoop() {
+        // This method gets data in about 4 to 8 ms.
+        VisionData[] filteredLimelightDatas = getFilteredLimelightData(false);
+        
         // This loop generally updates data in about 6 ms, but may double or triple for no apparent reason.
         // This causes loop overrun warnings, however, it doesn't seem to be due to inefficient code and thus can be ignored.
-        for (LimelightData data : filteredLimelightDatas) {
+        for (VisionData data : filteredLimelightDatas) {
             if (data.canTrustRotation) {
                 // Only trust rotational data when adding this pose.
-                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(9999999, 9999999, 1));
-                TunerConstants.DriveTrain.addVisionMeasurement(
+                CommandSwerveDrivetrain.getInstance().setVisionMeasurementStdDevs(VecBuilder.fill(9999999, 9999999, 1));
+                CommandSwerveDrivetrain.getInstance().addVisionMeasurement(
                     data.MegaTag.pose,
                     data.MegaTag.timestampSeconds
                 );
@@ -102,8 +125,8 @@ public class VisionSubsystem extends SubsystemBase {
 
             if (data.canTrustPosition) {
                 // Only trust positional data when adding this pose.
-                TunerConstants.DriveTrain.setVisionMeasurementStdDevs(VecBuilder.fill(1, 1, 9999999));
-                TunerConstants.DriveTrain.addVisionMeasurement(
+                CommandSwerveDrivetrain.getInstance().setVisionMeasurementStdDevs(VecBuilder.fill(1, 1, 9999999));
+                CommandSwerveDrivetrain.getInstance().addVisionMeasurement(
                     data.MegaTag2.pose,
                     data.MegaTag2.timestampSeconds
                 );
@@ -121,7 +144,7 @@ public class VisionSubsystem extends SubsystemBase {
      * @apiNote Will theoretically stop updating data if the heartbeat resets.
      * However, this happens at 2e9 frames, which would take consecutive 96 days at a consistent 240 fps.
      */
-    private LimelightData[] getFilteredLimelightData(boolean useStored) {
+    private VisionData[] getFilteredLimelightData(boolean useStored) {
         LimelightHelpers.PoseEstimate frontLLDataMT2 = null;
         LimelightHelpers.PoseEstimate backLLDataMT2 = null;
         long heartbeatFrontLL = -1;
@@ -129,7 +152,7 @@ public class VisionSubsystem extends SubsystemBase {
 
         // Periodic logic
         if (!useStored) {
-            double rotationDegrees = TunerConstants.DriveTrain.getState().Pose.getRotation().getDegrees();
+            double rotationDegrees = CommandSwerveDrivetrain.getInstance().getState().Pose.getRotation().getDegrees();
             LimelightHelpers.SetRobotOrientation(LimelightConstants.FRONT_APRIL_TAG_LL,
                 rotationDegrees, 0, 0, 0, 0, 0
             );
@@ -143,28 +166,29 @@ public class VisionSubsystem extends SubsystemBase {
             if (heartbeatFrontLL == -1 || this.lastHeartbeatFrontLL < heartbeatFrontLL) {
                 frontLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.FRONT_APRIL_TAG_LL);
                 LimelightHelpers.PoseEstimate frontLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.FRONT_APRIL_TAG_LL);
-                this.limelightDatas[0] = new LimelightData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2);
+                this.limelightDatas[0] = new VisionData(LimelightConstants.FRONT_APRIL_TAG_LL, frontLLDataMT, frontLLDataMT2);
                 this.lastHeartbeatFrontLL = heartbeatFrontLL == -1 ? this.lastHeartbeatFrontLL : heartbeatFrontLL;
             }
             
             if (heartbeatBackLL == -1 || this.lastHeartbeatBackLL < heartbeatBackLL) {
                 backLLDataMT2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LimelightConstants.BACK_APRIL_TAG_LL);
                 LimelightHelpers.PoseEstimate backLLDataMT = LimelightHelpers.getBotPoseEstimate_wpiBlue(LimelightConstants.BACK_APRIL_TAG_LL);
-                this.limelightDatas[1] = new LimelightData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2);
+                this.limelightDatas[1] = new VisionData(LimelightConstants.BACK_APRIL_TAG_LL, backLLDataMT, backLLDataMT2);
                 this.lastHeartbeatBackLL = heartbeatBackLL == -1 ? this.lastHeartbeatBackLL : heartbeatBackLL;
             }
 
-            ChassisSpeeds robotChassisSpeeds = TunerConstants.DriveTrain.getCurrentRobotChassisSpeeds();
+            ChassisSpeeds robotChassisSpeeds = CommandSwerveDrivetrain.getInstance().getCurrentRobotChassisSpeeds();
             double velocity = Math.sqrt(Math.pow(robotChassisSpeeds.vxMetersPerSecond, 2) + Math.pow(robotChassisSpeeds.vyMetersPerSecond, 2));
             // If the bot's angular velocity is greater than 270 deg/s, translational velocity is over 2 m/s,
             // or for both LLs the data is outdated or has no data, ignore vision updates.
             if (Math.abs(Units.radiansToDegrees(robotChassisSpeeds.omegaRadiansPerSecond)) > 270
                 || Math.abs(velocity) > 2 // m/s
                 || (this.lastHeartbeatBackLL != heartbeatBackLL && this.lastHeartbeatFrontLL != heartbeatFrontLL)
-                || ((frontLLDataMT2 != null && frontLLDataMT2.tagCount == 0) && (backLLDataMT2 != null && backLLDataMT2.tagCount == 0))
-                || (frontLLDataMT2 != null && frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
-                    && backLLDataMT2 != null && backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE)) {
-                return new LimelightData[0];
+                || ((frontLLDataMT2 == null || frontLLDataMT2.tagCount == 0) && (backLLDataMT2 == null || backLLDataMT2.tagCount == 0))
+                || ((frontLLDataMT2 == null || frontLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE)
+                    && (backLLDataMT2 == null || backLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE))
+            ) {
+                return new VisionData[0];
             }
         }
 
@@ -187,7 +211,7 @@ public class VisionSubsystem extends SubsystemBase {
             }
         }
         if (frontLLDataMT2 == null && backLLDataMT2 == null) {
-            return new LimelightData[0];
+            return new VisionData[0];
         }
 
         // Returns the data with the greater tag count.
@@ -195,26 +219,26 @@ public class VisionSubsystem extends SubsystemBase {
         // this means the data was retrieved from this.limelightDatas and not during this loop).
         if ((frontLLDataMT2 != null && (useStored || this.lastHeartbeatFrontLL == heartbeatFrontLL))
             && (backLLDataMT2 == null
-                || backLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
+                || backLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE
                 || frontLLDataMT2.tagCount > backLLDataMT2.tagCount)) {
-                return new LimelightData[]{ this.limelightDatas[0] };
+                return new VisionData[]{ this.limelightDatas[0] };
         }
         else if ((backLLDataMT2 != null && (useStored || this.lastHeartbeatBackLL == heartbeatBackLL))
             && (frontLLDataMT2 == null
-                || frontLLDataMT2.avgTagDist > LimelightConstants.TRUST_TAG_DISTANCE
+                || frontLLDataMT2.avgTagDist > VisionConstants.TRUST_TAG_DISTANCE
                 || backLLDataMT2.tagCount > frontLLDataMT2.tagCount)) {
-                return new LimelightData[]{ this.limelightDatas[1] };
+                return new VisionData[]{ this.limelightDatas[1] };
         }
 
         // Returns the data that's closer to its respective camera than 90% of the other's distance.
-        // 90% is a heuteristic.
+        // 90% is a heuristic.
         if ((!useStored && this.lastHeartbeatFrontLL == heartbeatFrontLL)
             && frontLLDataMT2.avgTagDist < backLLDataMT2.avgTagDist * 0.9) {
-            return new LimelightData[]{ this.limelightDatas[0] };
+            return new VisionData[]{ this.limelightDatas[0] };
         }
         else if ((!useStored && this.lastHeartbeatBackLL == heartbeatBackLL)
             && backLLDataMT2.avgTagDist < frontLLDataMT2.avgTagDist * 0.9) {
-            return new LimelightData[]{ this.limelightDatas[1] };
+            return new VisionData[]{ this.limelightDatas[1] };
         }
 
         // This return statement assumes that both LLs have the same amount of tags and
@@ -227,7 +251,7 @@ public class VisionSubsystem extends SubsystemBase {
      */
     private void optimizeLimelights() {
         byte index = 0; // Used only for setting the optimized flag, so that this can be a for-each loop.
-        for (LimelightData limelightData : this.limelightDatas) {
+        for (VisionData limelightData : this.limelightDatas) {
             if (limelightData == null || limelightData.optimized) {
                 return;
             }
@@ -239,8 +263,14 @@ public class VisionSubsystem extends SubsystemBase {
             // reset any optimization that might have been done previously.
             if (limelightData.MegaTag2 == null || limelightData.MegaTag2.tagCount == 0) {
                 LimelightHelpers.SetFiducialDownscalingOverride(limelightData.name, 1.5f);
-                LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, LimelightConstants.ALL_TAG_IDS);
-                LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
+                LimelightHelpers.SetFiducialIDFiltersOverride(limelightData.name, VisionConstants.ALL_TAG_IDS);
+                LimelightHelpers.setCropWindow(
+                    limelightData.name,
+                    -VisionConstants.DEFAULT_CROP_SIZE,
+                    VisionConstants.DEFAULT_CROP_SIZE,
+                    -VisionConstants.DEFAULT_CROP_SIZE,
+                    VisionConstants.DEFAULT_CROP_SIZE
+                );
                 continue;
             }
 
@@ -286,7 +316,13 @@ public class VisionSubsystem extends SubsystemBase {
             // For explanations of variables such as tx vs txnc, see :
             // https://docs.limelightvision.io/docs/docs-limelight/apis/complete-networktables-api#basic-targeting-data.
             if (limelightData.MegaTag2.rawFiducials.length == 0) {
-                LimelightHelpers.setCropWindow(limelightData.name, -1, 1, -1, 1);
+                LimelightHelpers.setCropWindow(
+                    limelightData.name,
+                    -VisionConstants.DEFAULT_CROP_SIZE,
+                    VisionConstants.DEFAULT_CROP_SIZE,
+                    -VisionConstants.DEFAULT_CROP_SIZE,
+                    VisionConstants.DEFAULT_CROP_SIZE
+                );
             }
             else {
                 LimelightHelpers.RawFiducial txncBig = null;
@@ -299,7 +335,7 @@ public class VisionSubsystem extends SubsystemBase {
                 // (for largest bounding box that will include all targets on screen).
                 for (LimelightHelpers.RawFiducial fiducial: limelightData.MegaTag2.rawFiducials) {
                     // This formula is explained below.
-                    sideLength = Math.sqrt(fiducial.ta * LimelightConstants.FOV_AREA) / 2;
+                    sideLength = Math.sqrt(fiducial.ta * VisionConstants.FOV_AREA) / 2;
                     
                     if (txncBig == null || fiducial.txnc + sideLength > txncBig.txnc) {
                         txncBig = fiducial;
@@ -322,11 +358,11 @@ public class VisionSubsystem extends SubsystemBase {
                 // (largest/smallest x and largest/smallest y).
                 //     MINUS for the smallest positions (left/bottom of the box) or PLUS for the largest positions (right/top of the box).
                 //         The length of the side of the targets — This is found in the following way :
-                //           We know the FOV area (LimelightConstants.FOV_AREA) -> We know percentage of screen target occupies (ta) ->
+                //           We know the FOV area (AprilTagLLConstants.FOV_AREA) -> We know percentage of screen target occupies (ta) ->
                 //           Targets are roughly squares at most angles so sqrt(target area in pixels) = side lengths.
                 //         Which is MULTIPLIED by a function that scales with distance (further away needs larger box due
                 //         to bot movements having more impact on target position from the camera's POV) in the following way :
-                //           ` 2 (heuteristic, this determines general box size) * ln(distance to target + 1) `
+                //           ` 2 (heuristic, this determines general box size) * ln(distance to target + 1) `
                 //           The +1 is added to the natural log to avoid a negative value for distances of less than 1 meter,
                 //           even if those are very rare. Natural log is probably not the best function for this, but it works well enough.
                 //
@@ -336,10 +372,10 @@ public class VisionSubsystem extends SubsystemBase {
                 // In the end this is DIVIDED by HALF of the rough width or height of the FOV,
                 // because Limelights expect cropping to be [-1.0, 1.0].
 
-                double xSmall = (txncSmall.txnc - Math.sqrt(txncSmall.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(txncSmall.distToCamera + 1)))
-                    / (LimelightConstants.FOV_X / 2);
-                double xBig = (txncBig.txnc + Math.sqrt(txncBig.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(txncBig.distToCamera + 1)))
-                    / (LimelightConstants.FOV_X / 2);
+                double xSmall = (txncSmall.txnc - Math.sqrt(txncSmall.ta * VisionConstants.FOV_AREA) * (2 * Math.log(txncSmall.distToCamera + 1)))
+                    / (VisionConstants.FOV_X / 2);
+                double xBig = (txncBig.txnc + Math.sqrt(txncBig.ta * VisionConstants.FOV_AREA) * (2 * Math.log(txncBig.distToCamera + 1)))
+                    / (VisionConstants.FOV_X / 2);
                 
                 LimelightHelpers.setCropWindow(
                     limelightData.name,
@@ -349,17 +385,17 @@ public class VisionSubsystem extends SubsystemBase {
                     //                           leftmost coordinate - 1.5 * (horizontal size of box) = a box 2.5x its original size
                     getNearbyTagDirection(txncSmall.id) < 0 ? xSmall - 1.5 * Math.abs(xBig - xSmall) : xSmall,
                     getNearbyTagDirection(txncBig.id) > 0 ? xBig + 1.5 * Math.abs(xBig - xSmall) : xBig,
-                    (tyncSmall.tync - Math.sqrt(tyncSmall.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(tyncBig.distToCamera + 1)))
-                        / (LimelightConstants.FOV_Y / 2),
-                    (tyncBig.tync + Math.sqrt(tyncBig.ta * LimelightConstants.FOV_AREA) * (2 * Math.log(tyncSmall.distToCamera + 1)))
-                        / (LimelightConstants.FOV_Y / 2)
+                    (tyncSmall.tync - Math.sqrt(tyncSmall.ta * VisionConstants.FOV_AREA) * (2 * Math.log(tyncBig.distToCamera + 1)))
+                        / (VisionConstants.FOV_Y / 2),
+                    (tyncBig.tync + Math.sqrt(tyncBig.ta * VisionConstants.FOV_AREA) * (2 * Math.log(tyncSmall.distToCamera + 1)))
+                        / (VisionConstants.FOV_Y / 2)
                 );
             }
         }
     }
     
     /**
-     * This is a helper for {@link VisionSubsystem#optimizeLimelights(LimelightData[])} smart cropping.
+     * This is a helper for {@link VisionSubsystem#optimizeLimelights(VisionData[])} smart cropping.
      * @param id - The target ID to consider.
      * @return Whether to expect another tag on the left, right, or neither.
      * @apiNote Left : -1 ; Right : +1 ; Neither : 0.
@@ -387,7 +423,7 @@ public class VisionSubsystem extends SubsystemBase {
      * @apiNote If MegaTag rotation cannot be trusted, it will use the odometry's current rotation.
      */
     public Pose2d getEstimatedPose() {
-        LimelightData[] filteredLimelightDatas = getFilteredLimelightData(true);
+        VisionData[] filteredLimelightDatas = getFilteredLimelightData(true);
 
         if (filteredLimelightDatas.length == 0) {
             System.err.println("getEstimatedPose() | NO LIMELIGHT DATA, DEFAULTING TO EMTPY POSE2D");
@@ -401,7 +437,7 @@ public class VisionSubsystem extends SubsystemBase {
             return new Pose2d(
                 filteredLimelightDatas[0].MegaTag2.pose.getTranslation(),
                 filteredLimelightDatas[0].canTrustRotation ?
-                    filteredLimelightDatas[0].MegaTag.pose.getRotation() : TunerConstants.DriveTrain.getState().Pose.getRotation()
+                    filteredLimelightDatas[0].MegaTag.pose.getRotation() : CommandSwerveDrivetrain.getInstance().getState().Pose.getRotation()
             );
         }
         else {
@@ -420,7 +456,7 @@ public class VisionSubsystem extends SubsystemBase {
                     // Ex : 180+180=0 followed by 0/2=0 when it should be 180+180=360 and 360/2=180.
                     filteredLimelightDatas[0].MegaTag.pose.getRotation().div(2)
                         .plus(filteredLimelightDatas[1].MegaTag.pose.getRotation().div(2)) :
-                    TunerConstants.DriveTrain.getState().Pose.getRotation()
+                    CommandSwerveDrivetrain.getInstance().getState().Pose.getRotation()
             );
         }
     }

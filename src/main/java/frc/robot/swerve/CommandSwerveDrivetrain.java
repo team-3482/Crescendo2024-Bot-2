@@ -4,8 +4,6 @@ import java.util.function.Supplier;
 
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrainConstants;
-import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathPlannerAuto;
@@ -15,18 +13,38 @@ import com.pathplanner.lib.util.ReplanningConfig;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
+import frc.robot.constants.Constants;
 
 /**
  * Class that extends the Phoenix SwerveDrivetrain class and implements
  * subsystem so it can be used in command-based projects easily.
  */
 public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsystem {
+    // Thread-safe singleton design pattern.
+    private static volatile CommandSwerveDrivetrain instance;
+    private static Object mutex = new Object();
+
+    public static CommandSwerveDrivetrain getInstance() {
+        CommandSwerveDrivetrain result = instance;
+        
+        if (result == null) {
+            synchronized (mutex) {
+                result = instance;
+                if (result == null) {
+                    instance = result = new CommandSwerveDrivetrain();
+                }
+            }
+        }
+        return instance;
+    }
+
     private static final double kSimLoopPeriod = 0.005; // 5 ms
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
@@ -40,16 +58,13 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 
     private final SwerveRequest.ApplyChassisSpeeds AutoRequest = new SwerveRequest.ApplyChassisSpeeds();
 
-    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency, SwerveModuleConstants... modules) {
-        super(driveTrainConstants, OdometryUpdateFrequency, modules);
-        configurePathPlanner();
-        if (Utils.isSimulation()) {
-            startSimThread();
-        }
-    }
-
-    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, SwerveModuleConstants... modules) {
-        super(driveTrainConstants, modules);
+    private CommandSwerveDrivetrain() {
+        super(TunerConstants.DrivetrainConstants,
+            TunerConstants.FrontLeft,
+            TunerConstants.FrontRight,
+            TunerConstants.BackLeft,
+            TunerConstants.BackRight
+        );
         configurePathPlanner();
         if (Utils.isSimulation()) {
             startSimThread();
@@ -68,14 +83,15 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
             this::getCurrentRobotChassisSpeeds,
             (speeds) -> this.setControl(AutoRequest.withSpeeds(speeds)), // Consumer of ChassisSpeeds to drive the robot
             new HolonomicPathFollowerConfig(
-                new PIDConstants(10, 0, 0), // TODO : Tune PP
-                new PIDConstants(10, 0, 0),
+                new PIDConstants(12, 0, 0.1),
+                new PIDConstants(10, 0, 0.1),
                 TunerConstants.kSpeedAt12VoltsMps,
                 driveBaseRadius,
                 new ReplanningConfig()
             ),
             () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red, // Assume the path needs to be flipped for Red vs Blue, this is normally the case
-            this); // Subsystem for requirements
+            this // Subsystem for requirements
+        );
     }
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier) {
@@ -119,6 +135,20 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
                         RedAlliancePerspectiveRotation : BlueAlliancePerspectiveRotation);
                 hasAppliedOperatorPerspective = true;
             });
+        }
+    }
+
+    /**
+     * This class exists because for some reason Java refuses to let the code in RobotContainer
+     * intefrace with the HeadingController of FieldCentricFacingAngle
+     * (despite it being public).
+     */
+    public static class FieldCentricFacingAngle_PID_Workaround extends SwerveRequest.FieldCentricFacingAngle {
+        public FieldCentricFacingAngle_PID_Workaround() {
+            super();
+            this.HeadingController = Constants.HeadingControllerFacingAngle;
+            this.HeadingController.enableContinuousInput(0, 2 * Math.PI);
+            this.HeadingController.setTolerance(Units.degreesToRadians(1));
         }
     }
 }

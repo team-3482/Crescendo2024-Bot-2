@@ -12,7 +12,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.DriverStation;
-import frc.robot.vision.VisionSubsystem;
+import frc.robot.limelights.VisionSubsystem;
 
 /**
  * A class that stores positions used for initialization and calculations.
