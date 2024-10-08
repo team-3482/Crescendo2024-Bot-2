@@ -13,8 +13,10 @@ import frc.robot.intake.IntakeSubsystem;
 /** Shoots a Note. */
 public class ShootCommand extends Command {
     private double velocity;
+
     private boolean atVelocity;
     private boolean cancel;
+
     private Timer timer;
 
     /**
@@ -29,12 +31,15 @@ public class ShootCommand extends Command {
         this.timer = new Timer();
 
         // Use addRequirements() here to declare subsystem dependencies.
-        addRequirements(ShooterSubsystem.getInstance(), IntakeSubsystem.getInstance());
+        addRequirements(IntakeSubsystem.getInstance(), ShooterSubsystem.getInstance());
     }
 
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
+        this.atVelocity = false;
+        this.timer.reset();
+
         if (IntakeSubsystem.getInstance().hasNote()) {
             this.cancel = false;
         }
@@ -42,9 +47,6 @@ public class ShootCommand extends Command {
             this.cancel = true;
             return;
         }
-
-        this.atVelocity = false;
-        this.timer.reset();
 
         ShooterSubsystem.getInstance().motionMagicVelocity(this.velocity);
     }
@@ -54,11 +56,7 @@ public class ShootCommand extends Command {
     public void execute() {
         if (this.cancel) return;
 
-        if (!this.atVelocity
-            && Math.abs(
-                ShooterSubsystem.getInstance().getVelocity() - this.velocity
-            ) <= ShooterConstants.VELOCITY_TOLERANCE
-        ) {
+        if (!this.atVelocity && ShooterSubsystem.getInstance().withinTolerance(this.velocity)) {
             this.atVelocity = true;
         }
 

@@ -4,6 +4,8 @@
 
 package frc.robot.constants;
 
+import edu.wpi.first.math.util.Units;
+
 /**
  * Constants used throughout the code specifically related to subsystems or unchangeable aspects of the bot.
  * @implSpec BACK of the bot is 180 degrees / the battery, use that as a reference for directions.
@@ -103,6 +105,9 @@ public final class PhysicalConstants {
         public static final double ABOVE_LIMELIGHT_ANGLE = 6;
         /** Lower soft stop angle in degrees. */
         public static final double LOWER_HARD_STOP = 2.796678; // Hard stop
+
+        /** Height of the center of rotation relative to the ground. */
+        public static final double PIVOT_HEIGHT = Units.inchesToMeters(6);
         
         /** This is the gear ratio from the sensor to the pivot. */
         public static final double ROTOR_TO_MECHANISM_RATIO = 100; // 5:1 -> 2:1 -> 10 : 1 = 100:1

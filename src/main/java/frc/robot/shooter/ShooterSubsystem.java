@@ -168,4 +168,13 @@ public class ShooterSubsystem extends SubsystemBase {
     public double getVelocity() {
         return this.bottomShooterMotor.getVelocity().getValueAsDouble();
     }
+
+    /**
+     * Checks if the current velocity is within
+     * {@link ShooterConstants#VELOCITY_TOLERANCE} of an input velocity.
+     * @param velocity - The velocity to compare to in rot/s.
+     */
+    public boolean withinTolerance(double velocity) {
+        return Math.abs(getVelocity() - velocity) <= ShooterConstants.VELOCITY_TOLERANCE;
+    }
 }

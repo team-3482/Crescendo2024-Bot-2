@@ -203,6 +203,15 @@ public class PivotSubsystem extends SubsystemBase {
     }
 
     /**
+     * Checks if the current position is within
+     * {@link PivotConstants#POSITION_TOLERANCE} of an input position.
+     * @param position - The position to compare to in rot.
+     */
+    public boolean withinTolerance(double position) {
+        return Math.abs(getPosition() - position) <= PivotConstants.POSITION_TOLERANCE;
+    }
+
+    /**
      * Gets the mechanism velocity of the right motor.
      * @return The velocity in degrees/s.
      */

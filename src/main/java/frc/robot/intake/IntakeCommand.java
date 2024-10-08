@@ -9,17 +9,9 @@ import frc.robot.constants.PhysicalConstants.IntakeConstants;
 
 /** Runs the intake for a Note. */
 public class IntakeCommand extends Command {
-    private double velocity;
-
-    /**
-     * Creates a new IntakeCommand.
-     * @param velocity - The speed at which the intake should run in rot/s.
-     * @apiNote This value is clamped by {@link IntakeConstants#CRUISE_SPEED}.
-     */
-    public IntakeCommand(double velocity) {
+    /** Creates a new IntakeCommand. */
+    public IntakeCommand() {
         setName("IntakeCommand");
-
-        this.velocity = velocity;
         
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(IntakeSubsystem.getInstance());
@@ -28,7 +20,7 @@ public class IntakeCommand extends Command {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        IntakeSubsystem.getInstance().motionMagicVelocity(this.velocity);
+        IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_INTAKE_VELOCITY);
     }
 
     // Called every time the scheduler runs while the command is scheduled.

@@ -166,6 +166,15 @@ public class IntakeSubsystem extends SubsystemBase {
         return this.rightIntakeMotor.getVelocity().getValueAsDouble();
     }
 
+    /**
+     * Checks if the current velocity is within
+     * {@link IntakeConstants#VELOCITY_TOLERANCE} of an input velocity.
+     * @param velocity - The velocity to compare to in rot/s.
+     */
+    public boolean withinTolerance(double velocity) {
+        return Math.abs(getVelocity() - velocity) <= IntakeConstants.VELOCITY_TOLERANCE;
+    }
+
     /** 
      * Checks whether there is a note in the intake.
      * @return Whether the laser beam is broken.
