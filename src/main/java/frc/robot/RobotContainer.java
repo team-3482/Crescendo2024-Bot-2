@@ -37,6 +37,7 @@ import frc.robot.swerve.TunerConstants;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.LimelightConstants.DetectionConstants;
+import frc.robot.constants.PhysicalConstants.IntakeConstants;
 import frc.robot.auto.DriveToNoteCommand;
 import frc.robot.constants.Positions;
 
@@ -422,14 +423,18 @@ public class RobotContainer {
         
         // Testing intaking
         operatorController.rightBumper()
-            .whileTrue(IntakeSubsystem.getInstance().runEnd(
-                () -> IntakeSubsystem.getInstance().motionMagicVelocity(10),
-                () -> ShooterSubsystem.getInstance().setSpeed(0)
+            .onTrue(Commands.runOnce(
+                () -> IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_INTAKE_VELOCITY)
+            ))
+            .onFalse(Commands.runOnce(
+                () -> IntakeSubsystem.getInstance().setSpeed(0)
             ));
         operatorController.leftBumper()
-            .whileTrue(IntakeSubsystem.getInstance().runEnd(
-                () -> IntakeSubsystem.getInstance().motionMagicVelocity(-10),
-                () -> ShooterSubsystem.getInstance().setSpeed(0)
+            .onTrue(Commands.runOnce(
+                () -> IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_EJECT_VELOCITY)
+            ))
+            .onFalse(Commands.runOnce(
+                () -> IntakeSubsystem.getInstance().setSpeed(0)
             ));
     }
 

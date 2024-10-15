@@ -25,39 +25,37 @@ public final class PhysicalConstants {
         public static final int RIGHT_INTAKE_MOTOR_ID = 21;
         public static final int BEAM_BREAK_LASER_CHANNEL = 8;
 
-        // TODO INTAKE 4 : Test with notes for best intaking velocity
         /** The velocity with which to intake in rot/s. */
-        public static final double IDEAL_INTAKE_VELOCITY = 0;
+        public static final double IDEAL_INTAKE_VELOCITY = 20;
+        /** The velocity with which to intake in rot/s. */
+        public static final double IDEAL_EJECT_VELOCITY = -5;
 
         /** This is the gear ratio from the sensor to the rollers. */
         public static final double ROTOR_TO_MECHANISM_RATIO = 4; // 4:1 gearbox
 
-        // TODO INTAKE 3 : Velocity tolerance
         /** Tolerance for Commands using MotionMagic in rot/s. */
-        public static final double VELOCITY_TOLERANCE = 0;
+        public static final double VELOCITY_TOLERANCE = 0.5;
 
-        // TODO INTAKE 2 : Tune MotionMagic
         /** Gains used for MotionMagic slot 0. */
         public static final class IntakeSlot0Gains {
             public static final double kG = 0;
-            public static final double kS = 0;
-            public static final double kV = 0;
+            public static final double kS = 0.25;
+            public static final double kV = 0.47;
             public static final double kA = 0;
-            public static final double kP = 0;
+            public static final double kP = 1;
             public static final double kI = 0;
             public static final double kD = 0;
         }
 
-        // TODO INTAKE 1 : Find max speed/accel
         /* More constants used with MotionMagic. */
         /**
          * Max mechanism rotations per second.
          * This value is not used for MotionMagicVelocity.
          * It is only here as a reminder.
          */
-        public static final double CRUISE_SPEED = 0;
+        public static final double CRUISE_SPEED = 23;
         /** Max mechanism rotations per second^2. */
-        public static final double ACCELERATION = 0;
+        public static final double ACCELERATION = 100;
     }
 
     /** Constants for the ShooterSubsystem. */

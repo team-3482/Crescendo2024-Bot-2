@@ -138,16 +138,27 @@ public class PivotSubsystem extends SubsystemBase {
     /**
      * Goes to a position using Motion Magic slot 0.
      * @param position - The position for the pivot in degrees.
-     * @apiNote The position is clamped by the soft limits in {@link PivotConstants}.
+     * @param clamp - Whether or not to clamp with the soft limits.
+     * @apiNote The soft limits in {@link PivotConstants}.
      */
-    public void motionMagicPosition(double position) {
-        position = MathUtil.clamp(position, PivotConstants.LOWER_HARD_STOP, PivotConstants.UPPER_ANGLE_LIMIT);
+    public void motionMagicPosition(double position, boolean clamp) {
+        if (clamp) {
+            position = MathUtil.clamp(position, PivotConstants.LOWER_HARD_STOP, PivotConstants.UPPER_ANGLE_LIMIT);
+        }
 
         MotionMagicVoltage control = motionMagicVoltage
             .withSlot(0)
             .withPosition(Units.degreesToRotations(position));
         
         this.rightPivotMotor.setControl(control);
+    }
+    /**
+     * Goes to a position using Motion Magic slot 0.
+     * @param position - The position for the pivot in degrees.
+     * @apiNote The position is clamped by the soft limits in {@link PivotConstants}.
+     */
+    public void motionMagicPosition(double position) {
+        motionMagicPosition(position, true);
     }
 
     /**
