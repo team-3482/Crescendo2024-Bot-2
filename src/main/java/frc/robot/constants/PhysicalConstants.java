@@ -23,7 +23,8 @@ public final class PhysicalConstants {
     public static final class IntakeConstants {
         public static final int LEFT_INTAKE_MOTOR_ID = 20;
         public static final int RIGHT_INTAKE_MOTOR_ID = 21;
-        public static final int BEAM_BREAK_LASER_CHANNEL = 8;
+        public static final int FRONT_LASER_CHANNEL = 0; // TODO 1 : Get channels after elec mounts lasers
+        public static final int BACK_LASER_CHANNEL = 0;
 
         /** The velocity with which to intake in rot/s. */
         public static final double IDEAL_INTAKE_VELOCITY = 20;

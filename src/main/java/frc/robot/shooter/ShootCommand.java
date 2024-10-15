@@ -62,7 +62,7 @@ public class ShootCommand extends Command {
 
         if (this.atVelocity) {
             IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_INTAKE_VELOCITY);
-            this.timer.start();
+            this.timer.start(); // TODO 2 : Replace timer with counting front laser passes ?
         }
     }
 
@@ -78,6 +78,6 @@ public class ShootCommand extends Command {
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return this.cancel || this.timer.hasElapsed(0.25);
+        return this.cancel || this.timer.hasElapsed(0.4);
     }
 }

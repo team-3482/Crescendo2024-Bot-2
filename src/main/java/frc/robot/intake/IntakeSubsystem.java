@@ -55,7 +55,8 @@ public class IntakeSubsystem extends SubsystemBase {
     private TalonFX rightIntakeMotor = new TalonFX(IntakeConstants.RIGHT_INTAKE_MOTOR_ID, RobotConstants.CTRE_CAN_BUS);
     private MotionMagicVelocityVoltage motionMagicVelocityVoltage = new MotionMagicVelocityVoltage(0);
     
-    private DigitalInput beamBreakLaser = new DigitalInput(IntakeConstants.BEAM_BREAK_LASER_CHANNEL);
+    private DigitalInput backLaser = new DigitalInput(IntakeConstants.BACK_LASER_CHANNEL);
+    private DigitalInput frontLaser = new DigitalInput(IntakeConstants.FRONT_LASER_CHANNEL);
 
     private final ShuffleboardLayout shuffleboardLayout = Shuffleboard.getTab(ShuffleboardTabNames.DEFAULT)
         .getLayout("IntakeSubsystem", BuiltInLayouts.kGrid)
@@ -175,11 +176,35 @@ public class IntakeSubsystem extends SubsystemBase {
         return Math.abs(getVelocity() - velocity) <= IntakeConstants.VELOCITY_TOLERANCE;
     }
 
+    /**
+     * Gets if the back laser is broken.
+     * @return If the laser is broken.
+     */
+    public boolean backLaserHasNote() {
+        return this.backLaser.get();
+    }
+
+    /**
+     * Gets if the front laser is broken.
+     * @return If the laser is broken.
+     */
+    public boolean frontLaserHasNote() {
+        return this.frontLaser.get();
+    }
+
+    /**
+     * Gets whether the lasers are broken.
+     * @return If the lasers are broken [back, front].
+     */
+    public boolean[] hasNotes() {
+        return new boolean[]{ backLaserHasNote(), frontLaserHasNote() };
+    }
+
     /** 
      * Checks whether there is a note in the intake.
-     * @return Whether the laser beam is broken.
+     * @return Whether either laser is broken.
      */
     public boolean hasNote() {
-        return !this.beamBreakLaser.get();
+        return backLaserHasNote() || frontLaserHasNote();
     }
 }
