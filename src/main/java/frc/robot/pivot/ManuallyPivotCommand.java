@@ -38,7 +38,7 @@ public class ManuallyPivotCommand extends Command {
         this.positiveSpeed = positiveSpeed;
         this.negativeSpeed = negativeSpeed;
         
-        this.speedLimiter = new SlewRateLimiter(0.3);
+        this.speedLimiter = new SlewRateLimiter(0.5);
         
         this.holding = false;
         this.restorePosition = restorePosition;

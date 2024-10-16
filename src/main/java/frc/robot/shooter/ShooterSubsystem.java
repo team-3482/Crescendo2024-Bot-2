@@ -27,6 +27,8 @@ import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.PhysicalConstants.ShooterConstants;
 import frc.robot.constants.PhysicalConstants.ShooterConstants.ShooterSlot0Gains;
+import frc.robot.pivot.PivotSubsystem;
+import frc.robot.constants.PhysicalConstants.PivotConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.PhysicalConstants.RobotConstants;
 
@@ -126,23 +128,29 @@ public class ShooterSubsystem extends SubsystemBase {
         motionMagicConfigs.MotionMagicAcceleration = ShooterConstants.ACCELERATION;
 
         // Motor-specific configurations.
-        motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive; // Bottom motor inverted.
+        motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
         this.bottomShooterMotor.getConfigurator().apply(configuration);
 
         slot0Configs.kS = ShooterSlot0Gains.kS_TopMotor;
 
-        motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive; // Top motor not inverted.
+        motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive;
         this.topShooterMotor.getConfigurator().apply(configuration);
     }
 
     /**
      * Aims for a velocity using MotionMagicVelocity.
      * @param velocity - In rotations/sec.
+     * @return Whether set the velocity successfully (true) or aborted due to pivot angle (false).
      * @apiNote This value is clamped by {@link ShooterConstants#CRUISE_SPEED}.
      * That is the maximum speed of the rollers.
+     * <li>Shooting is disabled if the pivot is below the {@link PivotConstants#ABOVE_LIMELIGHT_ANGLE}.
      */
-    public void motionMagicVelocity(double velocity) {
-        velocity = MathUtil.clamp(velocity, -ShooterConstants.CRUISE_SPEED, -ShooterConstants.CRUISE_SPEED);
+    public boolean motionMagicVelocity(double velocity) {
+        if (PivotSubsystem.getInstance().getPosition() < PivotConstants.ABOVE_LIMELIGHT_ANGLE) {
+            return false;
+        }
+
+        velocity = MathUtil.clamp(velocity, -ShooterConstants.CRUISE_SPEED, ShooterConstants.CRUISE_SPEED);
 
         MotionMagicVelocityVoltage control = motionMagicVelocityVoltage
             .withSlot(0)
@@ -150,6 +158,8 @@ public class ShooterSubsystem extends SubsystemBase {
         
         this.bottomShooterMotor.setControl(control);
         this.topShooterMotor.setControl(control);
+
+        return true;
     }
 
     /**
@@ -157,6 +167,7 @@ public class ShooterSubsystem extends SubsystemBase {
      * @param speed - Between -1.0 and 1.0.
      */
     public void setSpeed(double speed) {
+        speed = MathUtil.clamp(speed, -1, 1);
         this.bottomShooterMotor.set(speed);
         this.topShooterMotor.set(speed);
     }

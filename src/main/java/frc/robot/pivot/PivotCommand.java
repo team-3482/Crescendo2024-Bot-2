@@ -28,7 +28,7 @@ public class PivotCommand extends Command {
      * @param end - Whether to end the Command when at a that position, or to continue adjusting position until interrupted.
      * @apiNote The position is clamped by the soft limits in {@link PivotConstants}.
      */
-    private PivotCommand(double position, boolean calculatePosition, boolean end) {
+    public PivotCommand(double position, boolean calculatePosition, boolean end) {
         setName("PivotCommand");
         
         this.position = position;
@@ -45,7 +45,7 @@ public class PivotCommand extends Command {
      * @param position - The position to pivot to.
      * @apiNote The position is clamped by the soft limits in {@link PivotConstants}.
      */
-    private PivotCommand(double position) {
+    public PivotCommand(double position) {
         this(position, false, true);
     }
 

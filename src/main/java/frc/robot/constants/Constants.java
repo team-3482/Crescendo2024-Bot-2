@@ -4,6 +4,8 @@
 
 package frc.robot.constants;
 
+import java.util.function.Function;
+
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.ctre.phoenix6.mechanisms.swerve.utility.PhoenixPIDController;
 
@@ -34,5 +36,19 @@ public final class Constants {
         public static final boolean DPAD_DRIVE_INPUT = true;
         /** Speed multiplier when using fine-control movement. */
         public static final double FINE_CONTROL_MULT = 0.15;
+    }
+
+    /** Constants used for in-game behavior. */
+    public static final class BehaviorConstants {
+        /**
+         * How close to the target rotation to be before printing that it is.
+         * @param distance - Distance to the target in meters.
+         * @return The tolerance for the angle in degrees.
+         */
+        public static final Function<Double, Double> FACING_ANGLE_TOLERANCE = 
+            (Double distance) -> distance * 1; // TODO 3 : Test how viable this is
+        
+        /** The position of the pivot in degrees to shoot into the speaker from right in front of it. */
+        public static final double PIVOT_POSITION_SPEAKER = 0; // TODO 4 : Find this value
     }
 }

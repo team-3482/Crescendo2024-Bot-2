@@ -156,6 +156,7 @@ public class IntakeSubsystem extends SubsystemBase {
      * @param speed - Between -1.0 and 1.0.
      */
     public void setSpeed(double speed) {
+        speed = MathUtil.clamp(speed, -1, 1);
         this.rightIntakeMotor.set(speed);
     }
 
@@ -181,7 +182,7 @@ public class IntakeSubsystem extends SubsystemBase {
      * @return If the laser is broken.
      */
     public boolean backLaserHasNote() {
-        return this.backLaser.get();
+        return !this.backLaser.get();
     }
 
     /**
@@ -189,7 +190,7 @@ public class IntakeSubsystem extends SubsystemBase {
      * @return If the laser is broken.
      */
     public boolean frontLaserHasNote() {
-        return this.frontLaser.get();
+        return !this.frontLaser.get();
     }
 
     /**

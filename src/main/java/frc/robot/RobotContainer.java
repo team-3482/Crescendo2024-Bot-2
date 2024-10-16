@@ -24,16 +24,20 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
+import frc.robot.intake.IntakeCommand;
 import frc.robot.intake.IntakeSubsystem;
 import frc.robot.limelights.DetectionSubsystem;
 import frc.robot.limelights.VisionSubsystem;
 import frc.robot.pivot.ManuallyPivotCommand;
+import frc.robot.pivot.PivotCommand;
 import frc.robot.pivot.PivotSubsystem;
 import frc.robot.pivot.ResetAtHardstopCommand;
+import frc.robot.shooter.ShootCommand;
 import frc.robot.shooter.ShooterSubsystem;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
+import frc.robot.constants.Constants.BehaviorConstants;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.LimelightConstants.DetectionConstants;
@@ -149,9 +153,11 @@ public class RobotContainer {
         final SwerveRequest.FieldCentricFacingAngle fieldCentricFacingAngle_withDeadband = new CommandSwerveDrivetrain.FieldCentricFacingAngle_PID_Workaround()
             .withDeadband(reasonableMaxSpeed * ControllerConstants.DEADBAND)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+        Command intakeCommand = new IntakeCommand();
         
-        this.driverController.leftBumper().whileTrue(
-            drivetrain.applyRequest(() -> {
+        // TODO 2 : Test intaking a note using driver controller
+        this.driverController.leftBumper()
+            .whileTrue(drivetrain.applyRequest(() -> {
                 boolean topSpeed = leftTrigger.getAsBoolean();
                 boolean fineControl = rightTrigger.getAsBoolean();
 
@@ -170,7 +176,7 @@ public class RobotContainer {
                     || notePoses[0].getTranslation().getDistance(botTranslation)
                         >= DetectionConstants.MAX_NOTE_DISTANCE_DRIVING
                 ) {
-                    System.out.println("IntakeSubsystem Enabled (no note)");
+                    intakeCommand.schedule();
                     return fieldCentricDrive_withDeadband
                         .withVelocityX(velocityX)
                         .withVelocityY(velocityY)
@@ -187,7 +193,7 @@ public class RobotContainer {
                     if (drivetrain.getState().Pose.getTranslation()
                         .getDistance(notePose.getTranslation()) <= 1
                     ) {
-                        System.out.println("IntakeSubsystem Enabled (close to note)");
+                        intakeCommand.schedule();
                     }
 
                     Rotation2d targetRotation = new Rotation2d(Math.atan2(
@@ -200,8 +206,10 @@ public class RobotContainer {
                         .withVelocityY(velocityY)
                         .withTargetDirection(targetRotation);
                 }
-            })
-        );
+            }))
+            .onFalse(Commands.runOnce(
+                () -> CommandScheduler.getInstance().cancel(intakeCommand)
+            ));
         
         this.driverController.rightBumper().whileTrue(
             drivetrain.applyRequest(() -> {
@@ -231,13 +239,18 @@ public class RobotContainer {
                         );
                 }
 
-                Translation2d botTranslation = drivetrain.getState().Pose.getTranslation();
+                Pose2d botPose = drivetrain.getState().Pose;
                 Rotation2d targetRotation = new Rotation2d(
                     Math.atan2(
-                        speakerTranslation.getY() - botTranslation.getY(),
-                        speakerTranslation.getX() - botTranslation.getX() 
+                        speakerTranslation.getY() - botPose.getY(),
+                        speakerTranslation.getX() - botPose.getX() 
                     ) + Math.PI // Face with shooter, which is the back of the bot
                 );
+
+                if (Math.abs(botPose.getRotation().getDegrees() - targetRotation.getDegrees())
+                    <= BehaviorConstants.FACING_ANGLE_TOLERANCE.apply(botPose.getTranslation().getDistance(speakerTranslation))) {
+                        System.out.println("FacingSpeaker | Ready to shoot.");
+                    }
                 
                 return fieldCentricFacingAngle_withDeadband
                     .withVelocityX(velocityX)
@@ -366,7 +379,7 @@ public class RobotContainer {
          */
         // this.driverController.back().onTrue(
         //     CommandSwerveDrivetrain.getInstance().runOnce(() -> CommandSwerveDrivetrain.getInstance().seedFieldRelative(
-        //         new Pose2d(new Translation2d(5, 5), new Rotation2d())
+        //         new Pose2d(new Translation2d(), new Rotation2d())
         //     ))
         // );
         /*
@@ -384,7 +397,11 @@ public class RobotContainer {
          *     Right bumper (hold) : Targets SPEAKER to rotate around.
          *                           Does NOT shoot (operator's job).
          */
-        this.driverController.x().onTrue(new DriveToNoteCommand());
+        // TODO 1 : Test driving to a note while intaking !!
+        this.driverController.x().onTrue(Commands.race(
+            new DriveToNoteCommand(),
+            new IntakeCommand()
+        ));
     }
 
     /** Configures the button bindings of the driver controller */
@@ -411,30 +428,37 @@ public class RobotContainer {
             ));
         
         // Testing shooting
-        operatorController.pov(270)
-            .whileTrue(PivotSubsystem.getInstance().run(
-                () -> PivotSubsystem.getInstance().motionMagicPosition(55)
-            ));
-        operatorController.pov(90)
-            .whileTrue(PivotSubsystem.getInstance().runEnd(
-                () -> ShooterSubsystem.getInstance().motionMagicVelocity(30),
-                () -> ShooterSubsystem.getInstance().setSpeed(0)
-            ));
+        operatorController.pov(90).whileTrue(IntakeSubsystem.getInstance().runEnd(
+            () -> IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.SLOW_INTAKE_VELOCITY),
+            () -> IntakeSubsystem.getInstance().setSpeed(0)
+        ));
+        operatorController.pov(270).whileTrue(Commands.runEnd(
+            () -> {
+                ShooterSubsystem.getInstance().motionMagicVelocity(-5);
+                IntakeSubsystem.getInstance().motionMagicVelocity(-IntakeConstants.IDEAL_EJECT_VELOCITY);
+            },
+            () -> {
+                ShooterSubsystem.getInstance().setSpeed(0);
+                IntakeSubsystem.getInstance().setSpeed(0);
+            },
+            ShooterSubsystem.getInstance(), IntakeSubsystem.getInstance()
+        ));
         
-        // Testing intaking
-        operatorController.rightBumper()
-            .onTrue(Commands.runOnce(
-                () -> IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_INTAKE_VELOCITY)
-            ))
-            .onFalse(Commands.runOnce(
-                () -> IntakeSubsystem.getInstance().setSpeed(0)
-            ));
+        // TODO 5 : Test preset pivot position
+        operatorController.rightBumper().whileTrue(Commands.sequence(
+            new PivotCommand(BehaviorConstants.PIVOT_POSITION_SPEAKER),
+            new ShootCommand(15)
+        ));
+        // TODO 6 : Test calculating pivot position
         operatorController.leftBumper()
-            .onTrue(Commands.runOnce(
-                () -> IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_EJECT_VELOCITY)
+            .onTrue(Commands.sequence(
+                new PivotCommand(45, true, true),
+                new ShootCommand(20)
             ))
-            .onFalse(Commands.runOnce(
-                () -> IntakeSubsystem.getInstance().setSpeed(0)
+            .onFalse(Commands.runOnce(() -> {},
+                PivotSubsystem.getInstance(),
+                ShooterSubsystem.getInstance(),
+                IntakeSubsystem.getInstance()
             ));
     }
 

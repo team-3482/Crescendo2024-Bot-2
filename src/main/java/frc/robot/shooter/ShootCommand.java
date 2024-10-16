@@ -8,21 +8,23 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.PhysicalConstants.IntakeConstants;
 import frc.robot.constants.PhysicalConstants.ShooterConstants;
+import frc.robot.constants.PhysicalConstants.PivotConstants;
 import frc.robot.intake.IntakeSubsystem;
 
 /** Shoots a Note. */
 public class ShootCommand extends Command {
     private double velocity;
-
+    
     private boolean atVelocity;
-    private boolean cancel;
-
+    private boolean hitsLimelight;
+    
     private Timer timer;
 
     /**
      * Creates a new ShootCommand.
      * @param velocity - The speed at which the rollers should run in rot/s.
      * @apiNote This value is clamped by {@link ShooterConstants#CRUISE_SPEED}.
+     * Will not shoot if the shooter is below {@link PivotConstants#ABOVE_LIMELIGHT_ANGLE}.
      */
     public ShootCommand(double velocity) {
         setName("ShootCommand");
@@ -39,30 +41,29 @@ public class ShootCommand extends Command {
     public void initialize() {
         this.atVelocity = false;
         this.timer.reset();
+        this.hitsLimelight = ShooterSubsystem.getInstance().motionMagicVelocity(this.velocity);
 
-        if (IntakeSubsystem.getInstance().hasNote()) {
-            this.cancel = false;
-        }
-        else {
-            this.cancel = true;
+        if (this.hitsLimelight) {
+            System.out.println("ShootCommand | Current pivot position hits limelight.");
             return;
         }
-
-        ShooterSubsystem.getInstance().motionMagicVelocity(this.velocity);
     }
 
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        if (this.cancel) return;
-
+        if (this.hitsLimelight) return;
+        
         if (!this.atVelocity && ShooterSubsystem.getInstance().withinTolerance(this.velocity)) {
             this.atVelocity = true;
         }
 
         if (this.atVelocity) {
             IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_INTAKE_VELOCITY);
-            this.timer.start(); // TODO 2 : Replace timer with counting front laser passes ?
+        }
+
+        if (this.atVelocity && !IntakeSubsystem.getInstance().frontLaserHasNote()) {
+            this.timer.start();
         }
     }
 
@@ -78,6 +79,6 @@ public class ShootCommand extends Command {
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return this.cancel || this.timer.hasElapsed(0.4);
+        return this.hitsLimelight || this.timer.hasElapsed(0.25);
     }
 }

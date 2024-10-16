@@ -12,7 +12,6 @@ public class IntakeCommand extends Command {
     /** Creates a new IntakeCommand. */
     public IntakeCommand() {
         setName("IntakeCommand");
-        
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(IntakeSubsystem.getInstance());
     }
@@ -25,7 +24,11 @@ public class IntakeCommand extends Command {
 
     // Called every time the scheduler runs while the command is scheduled.
     @Override
-    public void execute() {}
+    public void execute() {
+        if (IntakeSubsystem.getInstance().backLaserHasNote()) {
+            IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.SLOW_INTAKE_VELOCITY);
+        }
+    }
 
     // Called once the command ends or is interrupted.
     @Override
@@ -36,6 +39,6 @@ public class IntakeCommand extends Command {
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return IntakeSubsystem.getInstance().hasNote();
+        return IntakeSubsystem.getInstance().frontLaserHasNote();
     }
 }

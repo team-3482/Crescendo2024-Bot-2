@@ -23,12 +23,14 @@ public final class PhysicalConstants {
     public static final class IntakeConstants {
         public static final int LEFT_INTAKE_MOTOR_ID = 20;
         public static final int RIGHT_INTAKE_MOTOR_ID = 21;
-        public static final int FRONT_LASER_CHANNEL = 0; // TODO 1 : Get channels after elec mounts lasers
-        public static final int BACK_LASER_CHANNEL = 0;
+        public static final int FRONT_LASER_CHANNEL = 8;
+        public static final int BACK_LASER_CHANNEL = 9;
 
         /** The velocity with which to intake in rot/s. */
         public static final double IDEAL_INTAKE_VELOCITY = 20;
-        /** The velocity with which to intake in rot/s. */
+        /** The velocity with which to intake past the back laser in rot/s. */
+        public static final double SLOW_INTAKE_VELOCITY = 5;
+        /** The velocity with which to eject in rot/s. */
         public static final double IDEAL_EJECT_VELOCITY = -5;
 
         /** This is the gear ratio from the sensor to the rollers. */
