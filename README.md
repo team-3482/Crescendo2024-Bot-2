@@ -21,6 +21,8 @@
 The name `Bot-2` is temporary, and will be changed in the future.
 The archive of our on-season code for our `Artemis` bot is in [Crescendo2024-Artemis](https://github.com/team-3482/Crescendo2024-Artemis/tree/onseason-archive).
 
+This robot will be used in the 2024 Off-Season Capital City Classic Tournament from October 25-27. Final scores will be posted here after.
+
 ## Resources
 
 TBD
