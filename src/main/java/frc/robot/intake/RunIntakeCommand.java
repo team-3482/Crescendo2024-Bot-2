@@ -8,10 +8,10 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.PhysicalConstants.IntakeConstants;
 
 /** Runs the intake for a Note. */
-public class IntakeCommand extends Command {
-    /** Creates a new IntakeCommand. */
-    public IntakeCommand() {
-        setName("IntakeCommand");
+public class RunIntakeCommand extends Command {
+    /** Creates a new RunIntakeCommand. */
+    public RunIntakeCommand() {
+        setName("RunIntakeCommand");
         // Use addRequirements() here to declare subsystem dependencies.
         addRequirements(IntakeSubsystem.getInstance());
     }

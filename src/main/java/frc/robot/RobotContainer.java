@@ -24,7 +24,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.constants.Positions.PositionInitialization;
-import frc.robot.intake.IntakeCommand;
 import frc.robot.intake.IntakeSubsystem;
 import frc.robot.limelights.DetectionSubsystem;
 import frc.robot.limelights.VisionSubsystem;
@@ -45,6 +44,7 @@ import frc.robot.constants.PhysicalConstants.IntakeConstants;
 import frc.robot.constants.PhysicalConstants.PivotConstants;
 import frc.robot.auto.DriveToNoteCommand;
 import frc.robot.constants.Positions;
+import frc.robot.utilities.CommandGenerators;
 
 public class RobotContainer {
     // Thread-safe singleton design pattern.
@@ -154,7 +154,7 @@ public class RobotContainer {
         final SwerveRequest.FieldCentricFacingAngle fieldCentricFacingAngle_withDeadband = new CommandSwerveDrivetrain.FieldCentricFacingAngle_PID_Workaround()
             .withDeadband(reasonableMaxSpeed * ControllerConstants.DEADBAND)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
-        Command intakeCommand = new IntakeCommand();
+        Command intakeCommand = CommandGenerators.getIntakeCommand();
         
         this.driverController.leftBumper()
             .whileTrue(drivetrain.applyRequest(() -> {
@@ -413,7 +413,7 @@ public class RobotContainer {
          *                           Does NOT shoot (operator's job).
          */
         this.driverController.x().onTrue(Commands.deadline(
-            new IntakeCommand(),
+            CommandGenerators.getIntakeCommand(),
             new DriveToNoteCommand()
         ));
     }
@@ -440,7 +440,7 @@ public class RobotContainer {
             .whileTrue(PivotSubsystem.getInstance().run(
                 () -> PivotSubsystem.getInstance().motionMagicPosition(5)
             ));
-        
+
         // Testing shooting
         operatorController.pov(90).whileTrue(IntakeSubsystem.getInstance().runEnd(
             () -> IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.SLOW_INTAKE_VELOCITY),
