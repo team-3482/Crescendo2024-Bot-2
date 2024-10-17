@@ -4,6 +4,8 @@
 
 package frc.robot.constants;
 
+import java.util.function.Function;
+
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.ctre.phoenix6.mechanisms.swerve.utility.PhoenixPIDController;
 
@@ -36,12 +38,42 @@ public final class Constants {
         public static final double FINE_CONTROL_MULT = 0.15;
     }
 
-    /** Constants used for in-game behavior. */
-    public static final class BehaviorConstants {
-        /** How close to the target rotation to be before printing that it is ready to shoot .*/
-        public static final double FACING_ANGLE_TOLERANCE = 2;
-        
+    /** Constants used for shooting commands. */
+    public static final class ShootingConstants {
         /** The position of the pivot in degrees to shoot into the speaker from right in front of it. */
         public static final double PIVOT_POSITION_SPEAKER = 50;
+        
+        /** How close to the target rotation to be before printing that it is ready to shoot .*/
+        public static final double FACING_ANGLE_TOLERANCE = 2;
+
+        // Heuristic velocity function // TODO 1 : Find
+        /** [ Minimum position in meters, minimum velocity in rot/s ]. */
+        public static final double[] MIN_POSITION_VELOCITY = new double[]{ 0, 0 };
+        /** [ Maximum position in meters, maximum velocity in rot/s ]. */
+        public static final double[] MAX_POSITION_VELOCITY = new double[]{ 0, 0 };
+        
+        /**
+         * A function that linearly interpolates a distance for a velocity between 
+         * {@link ShootingConstants#MIN_POSITION_VELOCITY} and {@link ShootingConstants#MAX_POSITION_VELOCITY}.
+         * If below or above those distances, it will use the velocity at the defined points.
+         * @param distance - The distance to the SPEAKER in meters.
+         * @return The velocity in rot/s.
+         */
+        public static final Function<Double, Double> CALCULATE_SHOOTER_VELOCITY = (Double distance) -> {
+            final double minD = MIN_POSITION_VELOCITY[0];
+            final double minV = MIN_POSITION_VELOCITY[1];
+            final double maxD = MAX_POSITION_VELOCITY[0];
+            final double maxV = MAX_POSITION_VELOCITY[1];
+
+            if (distance <= minD) {
+                return minV;
+            }
+            else if (distance >= maxD) {
+                return maxV;
+            }
+            else {
+                return minV + (distance - minD) * (maxV - minV) / (maxD - minD);
+            }
+        };
     }
 }

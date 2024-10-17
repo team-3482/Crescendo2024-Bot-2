@@ -34,7 +34,7 @@ import frc.robot.shooter.ShooterSubsystem;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
 import frc.robot.swerve.TunerConstants;
-import frc.robot.constants.Constants.BehaviorConstants;
+import frc.robot.constants.Constants.ShootingConstants;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.LimelightConstants.DetectionConstants;
@@ -256,7 +256,7 @@ public class RobotContainer {
                 double currentAngle = botPose.getRotation().getDegrees();
 
                 if (Math.min(Math.abs(goalAngle - currentAngle), 360 - Math.abs(goalAngle - currentAngle))
-                        <= BehaviorConstants.FACING_ANGLE_TOLERANCE)
+                        <= ShootingConstants.FACING_ANGLE_TOLERANCE)
                     {
                         System.out.println("FacingSpeaker | Ready to shoot.");
                     }
@@ -435,7 +435,6 @@ public class RobotContainer {
             .whileTrue(CommandGenerators.ShootSpeakerUpCloseCommand())
             .onFalse(CommandGenerators.ResetPivotToIdlePositionCommand());
         operatorController.leftBumper()
-            // TODO : Account for drop
             .whileTrue(CommandGenerators.AutonShootNoteCommand())
             .onFalse(CommandGenerators.ResetPivotToIdlePositionCommand());
     }

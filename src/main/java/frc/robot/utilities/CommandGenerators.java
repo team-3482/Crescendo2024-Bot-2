@@ -4,7 +4,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.auto.DriveToNoteCommand;
-import frc.robot.constants.Constants.BehaviorConstants;
+import frc.robot.constants.Constants.ShootingConstants;
 import frc.robot.constants.PhysicalConstants.IntakeConstants;
 import frc.robot.constants.PhysicalConstants.PivotConstants;
 import frc.robot.intake.IntakeSubsystem;
@@ -104,12 +104,12 @@ public final class CommandGenerators {
     }
 
     /**
-     * A command that will pivot and shoot for {@link BehaviorConstants#PIVOT_POSITION_SPEAKER}.
+     * A command that will pivot and shoot for {@link ShootingConstants#PIVOT_POSITION_SPEAKER}.
      * @return The command.
      */
     public static Command ShootSpeakerUpCloseCommand() {
         return Commands.sequence(
-            new PivotCommand(BehaviorConstants.PIVOT_POSITION_SPEAKER),
+            new PivotCommand(ShootingConstants.PIVOT_POSITION_SPEAKER),
             new ShootCommand(25) // TODO : Use min velocity graph ?
         );
     }
