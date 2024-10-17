@@ -19,7 +19,9 @@ public class IntakeCommand extends Command {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
-        IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_INTAKE_VELOCITY);
+        if (!IntakeSubsystem.getInstance().frontLaserHasNote()) {
+            IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_INTAKE_VELOCITY);
+        }
     }
 
     // Called every time the scheduler runs while the command is scheduled.

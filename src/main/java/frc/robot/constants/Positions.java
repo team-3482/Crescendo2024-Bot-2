@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.limelights.VisionSubsystem;
 
@@ -32,8 +33,8 @@ public final class Positions {
 
     /** SPEAKER positions to target */
     private static final Map<DriverStation.Alliance, Translation3d> SPEAKER_TARGET = Map.ofEntries(
-        Map.entry(DriverStation.Alliance.Blue, new Translation3d(0, 5.55, 3)),
-        Map.entry(DriverStation.Alliance.Red, new Translation3d(16.5, 5.55, 3))
+        Map.entry(DriverStation.Alliance.Blue, new Translation3d(-0.45, 5.55, Units.inchesToMeters(95))),
+        Map.entry(DriverStation.Alliance.Red, new Translation3d(16.95, 5.55, Units.inchesToMeters(95)))
     );
 
     /** AMP positions to line up to */

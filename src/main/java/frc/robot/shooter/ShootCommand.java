@@ -41,7 +41,7 @@ public class ShootCommand extends Command {
     public void initialize() {
         this.atVelocity = false;
         this.timer.reset();
-        this.hitsLimelight = ShooterSubsystem.getInstance().motionMagicVelocity(this.velocity);
+        this.hitsLimelight = !ShooterSubsystem.getInstance().motionMagicVelocity(this.velocity);
 
         if (this.hitsLimelight) {
             System.out.println("ShootCommand | Current pivot position hits limelight.");

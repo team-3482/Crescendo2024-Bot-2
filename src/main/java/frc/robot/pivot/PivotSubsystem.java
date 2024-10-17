@@ -67,7 +67,7 @@ public class PivotSubsystem extends SubsystemBase {
         .withPosition(0, 0)
         .getEntry();
     private GenericEntry shuffleboardPositionWidget = shuffleboardLayout
-        .add("Pivot Position Float", 0)
+        .add("Pivot Position Float", "0")
         .withWidget(BuiltInWidgets.kTextView)
         .withSize(2, 1)
         .withPosition(0, 1)
@@ -92,7 +92,7 @@ public class PivotSubsystem extends SubsystemBase {
     public void periodic() {
         double position = getPosition();
         this.shuffleboardPositionDial.setInteger((int) (position + 0.5));
-        this.shuffleboardPositionWidget.setDouble(position);
+        this.shuffleboardPositionWidget.setString(String.format("%.2f", position));
     }
 
     /**
