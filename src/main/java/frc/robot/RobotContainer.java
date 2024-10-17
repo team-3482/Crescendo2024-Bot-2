@@ -28,10 +28,8 @@ import frc.robot.intake.IntakeSubsystem;
 import frc.robot.limelights.DetectionSubsystem;
 import frc.robot.limelights.VisionSubsystem;
 import frc.robot.pivot.ManuallyPivotCommand;
-import frc.robot.pivot.PivotCommand;
 import frc.robot.pivot.PivotSubsystem;
 import frc.robot.pivot.ResetAtHardstopCommand;
-import frc.robot.shooter.ShootCommand;
 import frc.robot.shooter.ShooterSubsystem;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 import frc.robot.swerve.Telemetry;
@@ -40,9 +38,6 @@ import frc.robot.constants.Constants.BehaviorConstants;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.LimelightConstants.DetectionConstants;
-import frc.robot.constants.PhysicalConstants.IntakeConstants;
-import frc.robot.constants.PhysicalConstants.PivotConstants;
-import frc.robot.auto.DriveToNoteCommand;
 import frc.robot.constants.Positions;
 import frc.robot.utilities.CommandGenerators;
 
@@ -154,7 +149,7 @@ public class RobotContainer {
         final SwerveRequest.FieldCentricFacingAngle fieldCentricFacingAngle_withDeadband = new CommandSwerveDrivetrain.FieldCentricFacingAngle_PID_Workaround()
             .withDeadband(reasonableMaxSpeed * ControllerConstants.DEADBAND)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage);
-        Command intakeCommand = CommandGenerators.getIntakeCommand();
+        Command intakeCommand = CommandGenerators.IntakeCommand();
         
         this.driverController.leftBumper()
             .whileTrue(drivetrain.applyRequest(() -> {
@@ -378,10 +373,7 @@ public class RobotContainer {
      * @apiNote POV, joysticks, and start / back are all used in {@link RobotContainer#configureDrivetrain()}
      */
     private void configureDriverBindings() {
-        // Cancel all currently scheduled commands
-        this.driverController.b().onTrue(Commands.runOnce(() -> {
-            CommandScheduler.getInstance().cancelAll();
-        }));
+        this.driverController.b().onTrue(CommandGenerators.CancelAllCommands());
 
         /*
          * POV, joysticks, and start/back are all used in configureDrivetrain()
@@ -412,25 +404,19 @@ public class RobotContainer {
          *     Right bumper (hold) : Targets SPEAKER to rotate around.
          *                           Does NOT shoot (operator's job).
          */
-        this.driverController.x().onTrue(Commands.deadline(
-            CommandGenerators.getIntakeCommand(),
-            new DriveToNoteCommand()
-        ));
+        this.driverController.x().onTrue(CommandGenerators.AutonIntakeNote());
     }
 
     /** Configures the button bindings of the driver controller */
     private void configureOperatorBindings() {
-        // Cancel all currently scheduled commands
-        operatorController.b().onTrue(Commands.runOnce(() -> {
-            CommandScheduler.getInstance().cancelAll();
-        }));
+        operatorController.b().onTrue(CommandGenerators.CancelAllCommands());
 
         PivotSubsystem.getInstance().setDefaultCommand(new ManuallyPivotCommand(
             () -> operatorController.getRightTriggerAxis(),
             () -> operatorController.getLeftTriggerAxis(),
             false
         ));
-        operatorController.a().onTrue(new ResetAtHardstopCommand(true));
+        operatorController.a().onTrue(new ResetAtHardstopCommand(false));
 
         operatorController.pov(0)
             .whileTrue(PivotSubsystem.getInstance().run(
@@ -442,43 +428,16 @@ public class RobotContainer {
             ));
 
         // Testing shooting
-        operatorController.pov(90).whileTrue(IntakeSubsystem.getInstance().runEnd(
-            () -> IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.SLOW_INTAKE_VELOCITY),
-            () -> IntakeSubsystem.getInstance().setSpeed(0)
-        ));
-        operatorController.pov(270).whileTrue(Commands.runEnd(
-            () -> {
-                ShooterSubsystem.getInstance().motionMagicVelocity(-5);
-                IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_EJECT_VELOCITY);
-            },
-            () -> {
-                ShooterSubsystem.getInstance().setSpeed(0);
-                IntakeSubsystem.getInstance().setSpeed(0);
-            },
-            ShooterSubsystem.getInstance(), IntakeSubsystem.getInstance()
-        ));
+        operatorController.pov(90).whileTrue(CommandGenerators.ManualIntakeCommand());
+        operatorController.pov(270).whileTrue(CommandGenerators.ManuallyReverseIntakeCommand());
         
         operatorController.rightBumper()
-            .whileTrue(Commands.sequence(
-                new PivotCommand(BehaviorConstants.PIVOT_POSITION_SPEAKER),
-                new ShootCommand(25)
-            ))
-            .onFalse(new PivotCommand(PivotConstants.ABOVE_LIMELIGHT_ANGLE));
-        
+            .whileTrue(CommandGenerators.ShootSpeakerUpCloseCommand())
+            .onFalse(CommandGenerators.ResetPivotToIdlePositionCommand());
         operatorController.leftBumper()
             // TODO : Account for drop
-            .onTrue(Commands.sequence(
-                new PivotCommand(10, true, true),
-                new ShootCommand(30)
-            ))
-            .onFalse(Commands.parallel(
-                    new PivotCommand(PivotConstants.ABOVE_LIMELIGHT_ANGLE),
-                    Commands.runOnce(
-                        () -> {},
-                        ShooterSubsystem.getInstance(),
-                        IntakeSubsystem.getInstance()
-                    )
-                ));
+            .whileTrue(CommandGenerators.AutonShootNoteCommand())
+            .onFalse(CommandGenerators.ResetPivotToIdlePositionCommand());
     }
 
     /**
