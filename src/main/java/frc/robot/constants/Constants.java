@@ -46,7 +46,7 @@ public final class Constants {
         /** How close to the target rotation to be before printing that it is ready to shoot .*/
         public static final double FACING_ANGLE_TOLERANCE = 2;
 
-        // Heuristic velocity function // TODO 1 : Find
+        // Heuristic velocity function // TODO 2 : Find
         /** [ Minimum position in meters, minimum velocity in rot/s ]. */
         public static final double[] MIN_POSITION_VELOCITY = new double[]{ 0, 0 };
         /** [ Maximum position in meters, maximum velocity in rot/s ]. */
