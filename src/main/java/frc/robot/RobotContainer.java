@@ -416,6 +416,7 @@ public class RobotContainer {
             () -> operatorController.getLeftTriggerAxis(),
             false
         ));
+        // TODO 1 : Test reset at hard stop. Might need to reset lower limit.
         operatorController.a().onTrue(new ResetAtHardstopCommand(false));
 
         operatorController.pov(0)

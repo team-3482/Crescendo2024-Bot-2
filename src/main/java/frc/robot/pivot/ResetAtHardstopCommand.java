@@ -17,7 +17,6 @@ import frc.robot.constants.PhysicalConstants.PivotConstants;
 public class ResetAtHardstopCommand extends Command {
     private boolean nearCurrentStop;
     private Timer timer;
-    private boolean hasMovedDown;
     
     /**
      * Creates a new ExampleCommand.
@@ -38,33 +37,22 @@ public class ResetAtHardstopCommand extends Command {
     @Override
     public void initialize() {
         this.timer.restart();
-        this.hasMovedDown = false;
         
-        PivotSubsystem.getInstance().setPivotSpeed(-0.1, false);
+        PivotSubsystem.getInstance().setPivotSpeed(-0.15, false);
     }
 
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
         // Active MotionMagic might cause it to jerk up for a little bit
-        if (!this.hasMovedDown && PivotSubsystem.getInstance().getVelocity() >= 0) {
+        if (PivotSubsystem.getInstance().getVelocity() != 0) {
             PivotSubsystem.getInstance().setPivotSpeed(-0.1);
-        }
-        
-        else if (!this.hasMovedDown && PivotSubsystem.getInstance().getVelocity() < 0
-        ) {
-            this.hasMovedDown = true;
             this.timer.stop();
             this.timer.reset();
         }
-
-        else if (this.timer.get() == 0 && PivotSubsystem.getInstance().getVelocity() == 0) {
-            PivotSubsystem.getInstance().setPivotSpeed(0.05);
-            this.timer.restart();
-        }
-        
-        else if (this.timer.hasElapsed(0.1)) {
+        else if (PivotSubsystem.getInstance().getVelocity() == 0) {
             PivotSubsystem.getInstance().setPivotSpeed(0);
+            this.timer.restart();
         }
     }
 
@@ -76,7 +64,7 @@ public class ResetAtHardstopCommand extends Command {
 
         if (!interrupted) { // If interrupted, assume it probably isn't at the hard stop
             double difference = PivotConstants.LOWER_HARD_STOP - PivotSubsystem.getInstance().getPosition();
-            if (!nearCurrentStop || Math.abs(difference) <= 3) {
+            if (!nearCurrentStop || Math.abs(difference) <= 5) {
                 PivotSubsystem.getInstance().setPositionHardStop();
             }
         }
@@ -85,6 +73,6 @@ public class ResetAtHardstopCommand extends Command {
     // Returns true when the command should end.
     @Override
     public boolean isFinished() {
-        return this.timer.hasElapsed(0.5);
+        return PivotSubsystem.getInstance().getVelocity() == 0 && this.timer.hasElapsed(0.5);
     }
 }
