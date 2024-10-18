@@ -4,10 +4,13 @@
 
 package frc.robot.constants;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.ctre.phoenix6.mechanisms.swerve.utility.PhoenixPIDController;
+
+import edu.wpi.first.math.util.Units;
 
 /**
  * Constants used throughout the code that are not categorized in other constants files.
@@ -74,6 +77,27 @@ public final class Constants {
             else {
                 return minV + (distance - minD) * (maxV - minV) / (maxD - minD);
             }
+        };
+
+        /**
+         * A formula that calculates the pitch for the shooter based on the input velocity and the distance.
+         * @param distance - The distance to the SPEAKER in meters.
+         * @param velocity - The input velocity in rot/s. // TODO : Check if actually rot/s
+         * @return The pitch for the shot in degrees.
+         */
+        public static final BiFunction<Double, Double, Double> CALCULATE_SHOOTER_PITCH = (Double distance, Double velocity) -> {
+            final double GRAVITY = 9.81;
+
+            return Units.radiansToDegrees(Math.atan(
+                (
+                    Math.pow(velocity, 2)
+                    - Math.sqrt(
+                            Math.pow(velocity, 4)
+                            - Math.pow(GRAVITY, 2) * Math.pow(distance, 2)
+                            - 2 * GRAVITY * Math.pow(velocity, 2)
+                    )
+                ) / (GRAVITY * distance)
+            ));
         };
     }
 }
