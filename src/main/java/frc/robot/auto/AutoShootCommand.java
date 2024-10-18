@@ -85,6 +85,8 @@ public class AutoShootCommand extends Command {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
+        if (this.endEarly) return;
+
         SwerveDriveState botState = CommandSwerveDrivetrain.getInstance().getState();
         double botHeading = botState.Pose.getRotation().getDegrees();
         ChassisSpeeds botSpeeds = botState.speeds;
@@ -93,19 +95,21 @@ public class AutoShootCommand extends Command {
         ShotVector botVector = new ShotVector(botSpeeds.vxMetersPerSecond, botSpeeds.vyMetersPerSecond, 0);
         this.shotVector = calculateInitialShotVector().minus(botVector);
 
-        PivotSubsystem.getInstance().motionMagicPosition(this.shotVector.getPitch());
-        ShooterSubsystem.getInstance().motionMagicVelocity(this.shotVector.getNormRps());
-
         if (this.allowMovement) {
             // TODO : Yaw while moving.
         }
         else {
-            CommandSwerveDrivetrain.getInstance().setControl(
-                fieldCentricFacingAngle_withDeadband.withTargetDirection(
-                    Rotation2d.fromDegrees(this.shotVector.getYaw())
-                )
+            CommandSwerveDrivetrain.getInstance().setControl(fieldCentricFacingAngle_withDeadband
+                .withVelocityX(0)
+                .withVelocityY(0)
+                .withTargetDirection(Rotation2d.fromDegrees(this.shotVector.getYaw()))
             );
         }
+
+        // TODO Check that the angle can even physically make the shot
+        
+        PivotSubsystem.getInstance().motionMagicPosition(this.shotVector.getPitch());
+        ShooterSubsystem.getInstance().motionMagicVelocity(this.shotVector.getNormRps());
 
         if (PivotSubsystem.getInstance().withinTolerance(this.shotVector.getPitch())
             && ShooterSubsystem.getInstance().withinTolerance(this.shotVector.getNormRps())
@@ -113,6 +117,7 @@ public class AutoShootCommand extends Command {
                 Math.abs(this.shotVector.getYaw() - botHeading),
                 360 - Math.abs(this.shotVector.getYaw() - botHeading)
             ) <= ShootingConstants.FACING_ANGLE_TOLERANCE
+            // TODO ? Check tolerances using actual vector compared to goal vector ? (maybe how orbit does it)
         ) {
             IntakeSubsystem.getInstance().motionMagicVelocity(IntakeConstants.IDEAL_INTAKE_VELOCITY);
         }

@@ -38,6 +38,7 @@ import frc.robot.constants.Constants.ShootingConstants;
 import frc.robot.constants.Constants.ControllerConstants;
 import frc.robot.constants.Constants.ShuffleboardTabNames;
 import frc.robot.constants.LimelightConstants.DetectionConstants;
+import frc.robot.auto.AutoShootCommand;
 import frc.robot.constants.Positions;
 import frc.robot.utilities.CommandGenerators;
 
@@ -405,6 +406,7 @@ public class RobotContainer {
          *                           Does NOT shoot (operator's job).
          */
         this.driverController.x().onTrue(CommandGenerators.AutonIntakeNote());
+        this.driverController.a().whileTrue(new AutoShootCommand(false));
     }
 
     /** Configures the button bindings of the driver controller */
