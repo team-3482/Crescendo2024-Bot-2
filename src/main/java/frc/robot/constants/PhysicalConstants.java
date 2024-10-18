@@ -69,6 +69,9 @@ public final class PhysicalConstants {
         /** This is the gear ratio from the sensor to the rollers. */
         public static final double ROTOR_TO_MECHANISM_RATIO = (double) 25 / 9; // 50:18
 
+        /**  The radius of the shooter rollers in meters. */
+        public static final double ROLLER_RADIUS = Units.inchesToMeters(1.75) / 2;
+
         /** Tolerance for Commands using MotionMagic in rot/s. */
         public static final double VELOCITY_TOLERANCE = 0.35;
 

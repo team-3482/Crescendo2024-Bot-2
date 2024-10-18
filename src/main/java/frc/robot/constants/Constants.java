@@ -46,6 +46,7 @@ public final class Constants {
         /** The position of the pivot in degrees to shoot into the speaker from right in front of it. */
         public static final double PIVOT_POSITION_SPEAKER = 50;
         
+        // TODO : Better tolerance function based on distance.
         /** How close to the target rotation to be before printing that it is ready to shoot .*/
         public static final double FACING_ANGLE_TOLERANCE = 2;
 
