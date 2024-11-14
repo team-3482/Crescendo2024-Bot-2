@@ -21,7 +21,10 @@ import frc.robot.shooter.ShootCommand;
 import frc.robot.shooter.ShooterSubsystem;
 import frc.robot.swerve.CommandSwerveDrivetrain;
 
-/** A class that holds static methods that perform multiple functions. */
+/**
+ * A class that holds static methods that group Commands under specific names.
+ * This is useful because that way RobotContainer.java has less code and more readability.
+ */
 public final class CommandGenerators {
     // GENERAL
     //
@@ -85,7 +88,7 @@ public final class CommandGenerators {
      */
     public static Command AutonIntakeNoteCommand() {
         return Commands.race(
-            new DriveToNoteCommand().andThen(Commands.waitSeconds(2)),
+            new DriveToNoteCommand().andThen(Commands.waitSeconds(3)),
             CommandGenerators.IntakeCommand()
         );
     }

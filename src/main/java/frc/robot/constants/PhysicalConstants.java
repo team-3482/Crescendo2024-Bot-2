@@ -100,7 +100,7 @@ public final class PhysicalConstants {
          * This value is not used for MotionMagicVelocity.
          * It is only here as a reminder.
          */
-        public static final double CRUISE_SPEED = 240; 
+        public static final double CRUISE_SPEED = 240;
         /** Max mechanism rotations per second^2 */
         public static final double ACCELERATION = 800;
     }

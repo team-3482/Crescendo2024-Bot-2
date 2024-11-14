@@ -18,7 +18,7 @@ import frc.robot.constants.PhysicalConstants.ShooterConstants;
  */
 public final class Constants {
     /** Constants used for maintaining a heading when using {@link SwerveRequest#FieldCentricFacingAngle} */
-    public static final PhoenixPIDController HeadingControllerFacingAngle = new PhoenixPIDController(6, 0, 0);
+    public static final PhoenixPIDController HeadingControllerFacingAngle = new PhoenixPIDController(7.5, 0, 0);
     
     /**
      * Tab names in Shuffleboard.

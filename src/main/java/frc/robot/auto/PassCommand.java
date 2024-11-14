@@ -47,7 +47,7 @@ public class PassCommand extends Command {
      * @param rotSupplier - Supplier for rotational robot movement from -1.0 to 1.0.
      * @param rotate - Whether or not to check face the passing position..
      */
-    public PassCommand( // TODO : Test and fix
+    public PassCommand(
         Supplier<Double> xSupplier, Supplier<Double> ySupplier,
         Supplier<Double> rotSupplier, boolean rotate
     ) {

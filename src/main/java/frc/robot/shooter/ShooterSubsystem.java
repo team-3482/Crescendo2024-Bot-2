@@ -131,10 +131,8 @@ public class ShooterSubsystem extends SubsystemBase {
         motionMagicConfigs.MotionMagicAcceleration = ShooterConstants.ACCELERATION;
         
         CurrentLimitsConfigs currentLimitsConfigs = configuration.CurrentLimits;
-        currentLimitsConfigs.SupplyCurrentLimitEnable = true;
-        currentLimitsConfigs.SupplyCurrentLimit = 60;
-        currentLimitsConfigs.SupplyCurrentThreshold = 60;
-        currentLimitsConfigs.SupplyTimeThreshold = 0;
+        currentLimitsConfigs.StatorCurrentLimitEnable = true;
+        currentLimitsConfigs.StatorCurrentLimit = 80;
 
         // Motor-specific configurations.
         motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive;

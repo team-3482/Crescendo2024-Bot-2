@@ -148,10 +148,8 @@ public class PivotSubsystem extends SubsystemBase {
         // motionMagicConfigs.MotionMagicJerk = PivotConstants.MOTION_MAGIC_JERK;
 
         CurrentLimitsConfigs currentLimitsConfigs = configuration.CurrentLimits;
-        currentLimitsConfigs.SupplyCurrentLimitEnable = true;
-        currentLimitsConfigs.SupplyCurrentLimit = 6.5;
-        currentLimitsConfigs.SupplyCurrentThreshold = 10;
-        currentLimitsConfigs.SupplyTimeThreshold = 0.1;
+        currentLimitsConfigs.StatorCurrentLimitEnable = true;
+        currentLimitsConfigs.StatorCurrentLimit = 20;
 
         // Motor-specific configurations.
         motorOutputConfigs.Inverted = InvertedValue.Clockwise_Positive; // Right motor not inverted.

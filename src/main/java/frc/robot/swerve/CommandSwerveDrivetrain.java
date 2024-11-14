@@ -3,7 +3,9 @@ package frc.robot.swerve;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.Utils;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
+import com.ctre.phoenix6.mechanisms.swerve.SwerveModule;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.PathPlannerAuto;
@@ -68,6 +70,10 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
         configurePathPlanner();
         if (Utils.isSimulation()) {
             startSimThread();
+        }
+
+        for (SwerveModule module : this.Modules) {
+            module.getSteerMotor().getConfigurator().apply(new CurrentLimitsConfigs());
         }
     }
 
@@ -140,7 +146,7 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 
     /**
      * This class exists because for some reason Java refuses to let the code in RobotContainer
-     * intefrace with the HeadingController of FieldCentricFacingAngle
+     * modify the HeadingController variable of FieldCentricFacingAngle
      * (despite it being public).
      */
     public static class FieldCentricFacingAngle_PID_Workaround extends SwerveRequest.FieldCentricFacingAngle {

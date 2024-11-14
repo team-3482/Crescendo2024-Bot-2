@@ -155,10 +155,8 @@ public class IntakeSubsystem extends SubsystemBase {
         motionMagicConfigs.MotionMagicAcceleration = IntakeConstants.ACCELERATION;
 
         CurrentLimitsConfigs currentLimitsConfigs = configuration.CurrentLimits;
-        currentLimitsConfigs.SupplyCurrentLimitEnable = true;
-        currentLimitsConfigs.SupplyCurrentLimit = 40;
-        currentLimitsConfigs.SupplyCurrentThreshold = 50;
-        currentLimitsConfigs.SupplyTimeThreshold = 0.1;
+        currentLimitsConfigs.StatorCurrentLimitEnable = true;
+        currentLimitsConfigs.StatorCurrentLimit = 30;
 
         // Motor-specific configurations.
         motorOutputConfigs.Inverted = InvertedValue.CounterClockwise_Positive; // Bottom motor inverted.
